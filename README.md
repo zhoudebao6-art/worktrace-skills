@@ -6,7 +6,7 @@
 
 ## 其他电脑下载使用
 
-仓库保持私有。所有者从 [发布页](https://github.com/zhoudebao6-art/worktrace-skills/releases) 下载 `worktrace-skills-v0.2.1.zip` 和 SHA256 文件，核验后放到公司共享目录。其他电脑无需 Git/GitHub 账号，下载并解压源码，例如到 `D:\WorkTraceSource`：
+本仓库已公开，包含总控、分控采集、个人总结和证据四个技能及配套服务源码。其他电脑无需 GitHub 登录，直接从 [发布页](https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.2.1) 下载 `worktrace-skills-v0.2.1.zip` 和 `SHA256SUMS.txt`，核验后解压源码，例如到 `D:\WorkTraceSource`：
 
 ```powershell
 Set-Location D:\WorkTraceSource
@@ -17,7 +17,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-SharedSkil
 
 后续将新版源码解压到新目录，再运行相同脚本并加 `-Update`。脚本保留部署绑定并检查本地修改，更新前备份；已有不同来源技能不会强行覆盖。已部署服务需另按升级流程处理。
 
-这是源码分发，不是安装包；总控技能继续负责正式环境搭建。完整下载步骤与可直接粘贴的 Codex 提示词见 [下载使用手册](docs/download.md)。私有 GitHub 下载链接仅对已有仓库权限的账号有效，员工使用公司共享目录中的副本。
+这是源码分发，不是安装包；总控技能继续负责正式环境搭建。完整下载步骤见 [下载使用手册](docs/download.md)。也可以匿名克隆本仓库后安装。专用发布 ZIP 带有离线安装清单，GitHub 自动生成的 Source code ZIP 不能直接替代它。
+
+**让另一台电脑的 Codex 自己读取：** [化工案件员工独立离线分控完整指令](prompts/chemical-offline-collector.txt)（[纯文本地址](https://raw.githubusercontent.com/zhoudebao6-art/worktrace-skills/main/prompts/chemical-offline-collector.txt)）。指令要求目标电脑先补齐并验证离线首次建档、本地日总结和完整移交，再部署运行；**v0.2.1 尚不具备这些离线扩展的全部能力**。
+
+2026-10-13 已开放完整维护仓库。v0.2.1 专用 ZIP 保持原字节和 SHA256，包内旧版“私有下载”说明由本页及 main 分支的下载手册替代。公开仓库只保存通用源码、说明和合成测试，不保存公司工作数据。
 
 ## 为什么这样做
 
