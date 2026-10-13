@@ -1,9 +1,9 @@
-import {readFileSync,writeFileSync,existsSync,mkdirSync} from 'node:fs';
+import {readFileSync,writeFileSync,existsSync,mkdirSync,statSync} from 'node:fs';
 import {resolve,dirname,join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {localApi} from './local-api.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
-export async function admin({command,role,dir=join(root,'data'),input,output}){
+export async function admin({command,role,dir=join(root,'data'),input,output,records}){
  if(!['hub','collector'].includes(role))throw Error('需要明确本机角色 hub 或 collector');
  const data=input?JSON.parse(readFileSync(input,'utf8').replace(/^\uFEFF/,'')):{};
  const status=await localApi(dir,'status');if(status.configured&&status.role!==role)throw Error('已配置角色与 Skill 角色不一致，不能覆盖初始化');
@@ -14,6 +14,17 @@ export async function admin({command,role,dir=join(root,'data'),input,output}){
   return localApi(dir,'setup',role==='hub'?{...data,role:'hub'}:{role:'collector',enrollment:data});
  }
  if(!status.configured)throw Error('请先初始化本机');
+ if(command==='import-external'){
+  if(role!=='collector'||!records)throw Error('外部记录导入需要 collector 角色及 --records 本地 JSON 文件');
+  const stat=statSync(records);if(!stat.isFile()||stat.size>16*1024*1024)throw Error('导出 JSON 必须是至多 16MiB 的文件');
+  const source=JSON.parse(readFileSync(records,'utf8').replace(/^\uFEFF/,''));
+  return localApi(dir,'import/external',{...data,input:source});
+ }
+ if(command==='knowledge-search'||command==='knowledge-read')return localApi(dir,'knowledge/'+command.slice(10)+'?'+new URLSearchParams(data));
+ if(command==='candidate-evaluate')return localApi(dir,'candidates/evaluate',data);
+ if(command==='candidate-evaluations')return localApi(dir,'candidates/evaluations?'+new URLSearchParams(data));
+ if(command==='candidate-revise')return localApi(dir,'candidates/revise',data);
+ if(command==='candidate-revisions')return localApi(dir,'candidates/revisions?'+new URLSearchParams(data));
  if(command==='enroll'){
   if(role!=='hub')throw Error('只有总控可以登记设备');
   if(!output)throw Error('登记文件必须通过 --output 保存，不能打印密钥');
@@ -36,6 +47,6 @@ export async function admin({command,role,dir=join(root,'data'),input,output}){
  throw Error('不支持的管理命令');
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
- const opts={};try{for(let i=2;i<process.argv.length;i+=2){const key=process.argv[i];if(!['--command','--role','--dir','--input','--output'].includes(key)||!process.argv[i+1])throw Error('管理参数无效');opts[key.slice(2)]=process.argv[i+1];}
+ const opts={};try{for(let i=2;i<process.argv.length;i+=2){const key=process.argv[i];if(!['--command','--role','--dir','--input','--output','--records'].includes(key)||!process.argv[i+1])throw Error('管理参数无效');opts[key.slice(2)]=process.argv[i+1];}
   console.log(JSON.stringify(await admin(opts)));}catch(e){console.error(JSON.stringify({error:e.message}));process.exitCode=1;}
 }

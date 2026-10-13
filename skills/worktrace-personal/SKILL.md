@@ -19,4 +19,8 @@ description: 在员工分控上用 WorkTrace MCP 总结个人工作方法、操�
 
 读取 `worktrace_personal_history` 可了解过去方法，不能把模型旧结论当新的独立证据。跨员工统一规则、发布候选 skill、设计业务执行 loop 由总控负责。
 
+需要回忆某项做法时，先用 `worktrace_knowledge_search`，明确本人的 employee_id、device_id 和最多 31 天的 UTC 范围，按关键词取方法摘要；有 next_cursor 才继续下一窗。需要核对时用返回的 read 参数调用 `worktrace_knowledge_read`；它也有截断预算，缺口不能补写。历史总结只能辅助理解，本次保存引用仍限领取批次。不要将所有历史全文反复放入模型上下文。
+
+外部事件带 provenance：ActivityWatch 只有活动元数据；Screenpipe OCR/UI 是可见文本，不是完整操作演示。来源记录、模型总结、人工核验声明分别保留；不能把模型旧结论重新当成独立原始证据。
+
 服务已提供可选夜间执行器，由部署目录 scripts/Configure-Learning.ps1 启用，总控通过持久化任务队列调度；Skill 文字本身不是定时器。查看 worktrace_node_jobs 中分配给本机的消息；需要给总控回复时用 worktrace_reply_to_hub，明确这是分控 Codex 的分析，不冒充员工本人。每任务回复不可覆盖，后续用新任务。未启用执行器时手动触发；有缺口、故障或待处理事项才报告。

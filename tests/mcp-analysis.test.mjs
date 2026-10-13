@@ -21,7 +21,8 @@ test('总控 MCP 实际 stdio：汇总、按编号取证、增量分析与图片
   child=spawn(process.execPath,['src/mcp.mjs','--data',dir],{cwd:resolve('.'),windowsHide:true,stdio:['pipe','pipe','pipe']});reader=createInterface({input:child.stdout});const waiting=new Map();let next=0;reader.on('line',line=>{const r=JSON.parse(line);waiting.get(r.id)?.(r.result);waiting.delete(r.id);});
   const rpc=(method,params)=>new Promise((ok,no)=>{const id=++next;const timer=setTimeout(()=>{waiting.delete(id);no(Error('MCP timeout'));},30000);waiting.set(id,r=>{clearTimeout(timer);ok(r);});child.stdin.write(JSON.stringify({jsonrpc:'2.0',id,method,params})+'\n');});
   const call=async(name,args={})=>{const r=await rpc('tools/call',{name,arguments:args});assert(!r.isError,JSON.stringify(r));return r.content[0].type==='text'?JSON.parse(r.content[0].text):r.content[0];};
-  assert.equal((await rpc('tools/list')).tools.length,23);
+  const available=(await rpc('tools/list')).tools.map(t=>t.name);
+  for(const name of ['worktrace_report','worktrace_get_evidence','worktrace_knowledge_search','worktrace_knowledge_read','worktrace_candidate_evaluate','worktrace_candidate_evaluations'])assert(available.includes(name));
   const report=await call('worktrace_report',{from:'2026-10-13T00:00:00.000Z',to:'2026-10-13T23:59:59.999Z'});assert.equal(report.event_count,1);
   const brief=await call('worktrace_read_events');assert(brief.items[0].payload.text_truncated);const full=await call('worktrace_get_evidence',{event_ids:[e.event_id]});assert.equal(full.items[0].payload.text.length,1000);
   const img=await call('worktrace_read_image',{sha256:asset.sha256});assert.equal(img.type,'image');assert.equal(img.data,asset.data);

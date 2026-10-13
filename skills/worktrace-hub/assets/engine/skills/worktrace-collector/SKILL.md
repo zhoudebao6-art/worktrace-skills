@@ -5,7 +5,7 @@ description: 在已告知员工的固定工作电脑上部署和维护 WorkTrace
 
 本机只保存本员工证据并向总控补传。采集由本地服务持续运行，Codex 负责部署、故障诊断和调用 worktrace-personal 做个人方法学习；关闭 Codex 对话不影响已启动服务。不可把单个 Skill 文件说成常驻监控程序。
 
-使用本技能 `scripts/control.ps1`。先 `-Action start`，再 `-Action status`。已配置时核对员工和设备编号，不重复初始化或更换身份。详细参数见 [references/operations.md](references/operations.md)。
+部署与维护使用本技能 `scripts/control.ps1`。先 `-Action start`，再 `-Action status`。已配置时核对员工和设备编号，不重复初始化或更换身份。详细参数见 [references/operations.md](references/operations.md)。只需导入用户已有的 ActivityWatch/Screenpipe 导出时，按 [references/external-records.md](references/external-records.md) 在对应的已部署分控预览、导入，保持采集暂停状态；不为导入另建总控或安装上游采集器。
 
 初始化只使用管理员交给此电脑的专属 .enroll.json，通过文件路径传给脚本；不要把密钥贴进对话，不复制其他电脑的 data。公司已统一告知时沿用部署授权，不要求员工每一步确认。
 

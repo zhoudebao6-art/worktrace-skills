@@ -6,8 +6,8 @@
 公司已经统一告知员工此次工作记录与方法学习。保持可见托盘和暂停入口，不反复索要逐条授权、不抢鼠标键盘、不自动操作微信、发送消息、提交专利或改变工作原件。
 
 二、源码、目录与首次配置
-在当前目标电脑自行取得源码。公开发布页：https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.2.1 。下载 Assets 中的 worktrace-skills-v0.2.1.zip 和 SHA256SUMS.txt；无需 GitHub 账号或私有维护仓库权限。ZIP 的固定 SHA256 为 33f7a85212f7f7cfaeac5928c35e949c9100a39cc55b00771947426e1fa372bc，须同时与发布清单一致。本维护仓库现已公开，无需访问其他私有仓库，不索取他人凭据，不尝试读取发起方电脑的 E: 盘、本地文件链接或局域网。访问失败时报告具体网络错误，不编造源码。包内旧版文档的私有下载入口由本公开发布页替代，其他部署与数据保护规则保持。核验原包后完整解压，阅读 AGENTS.md、docs/download.md、docs/deployment.md、docs/nightly-loop.md，以及 worktrace-collector、worktrace-personal、worktrace-evidence 的 SKILL.md 与 references。
-读取现有源码，不假定功能存在。已知 v0.2.1 的 collector 首次初始化必须有 enrollment；自动学习只消费总控任务；现有 wpack 导入要求相同 org_id 且设备已登记，并不会自动登记包内 devices。以下离线功能属于需要补齐并实测的部分，不能照搬联网 Join 后把失败当成功。
+在当前目标电脑自行取得源码。公开发布页：https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.3.0 。下载 Assets 中的 worktrace-skills-v0.3.0.zip 和 SHA256SUMS.txt；无需 GitHub 账号或私有维护仓库权限。先从同一个 v0.3.0 发布取得 SHA256SUMS.txt，计算 ZIP 的 SHA256 并核对唯一对应项；不沿用旧版校验值。本维护仓库现已公开，无需访问其他私有仓库，不索取他人凭据，不尝试读取发起方电脑的 E: 盘、本地文件链接或局域网。访问失败时报告具体网络错误，不编造源码。v0.3.0 增加外部导入、分层检索和离线候选验收，但没有自动补齐下文无总控首次部署能力。核验原包后完整解压，阅读 AGENTS.md、docs/download.md、docs/deployment.md、docs/nightly-loop.md，以及 worktrace-collector、worktrace-personal、worktrace-evidence 的 SKILL.md 与 references。
+读取现有源码，不假定功能存在。已知 v0.3.0 的 collector 首次初始化必须有 enrollment；自动学习只消费总控任务；现有 wpack 导入要求相同 org_id 且设备已登记，并不会自动登记包内 devices。以下离线功能属于需要补齐并实测的部分，不能照搬联网 Join 后把失败当成功。
 原下载包与官方源码保留不改。在独立派生源码目录实施兼容扩展，生成注明基础版本、修改清单、模式版本和 SHA256 的新清单；不要修改原包后伪装为仍通过官方清单。将维护源与总控技能内的引擎镜像同步更新；本地部署明确记录派生来源，遇到安装器来源校验阻止时提供正式派生安装入口，不绕过校验或覆盖既有技能。
 建议目录：D:\WorkTraceChemSource（派生源码）、D:\WorkTraceChem（运行程序与 data）、D:\WorkTraceChemBackups（版本化备份）、D:\WorkTraceChemHandoff（交接成果）。不存在 D 盘时选实际非系统盘，先报告路径。不将数据库写到技能目录或临时目录。缓存和临时文件遵循本机 AGENTS.md；有 D 盘用 D:\codex+。
 首次只集中确认必需的信息：员工唯一编号与显示名、公司名称或内部代号、允许记录的业务软件和资料目录、实际工作日及上下班时间。已有有效身份或部署先核对并沿用，不重复初始化。未获得资料目录时可以先完成软件部署与合成测试，但不能扫描整盘代替授权范围或声称已学习业务。

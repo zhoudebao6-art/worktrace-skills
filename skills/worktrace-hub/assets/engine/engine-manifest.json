@@ -1,6 +1,6 @@
 {
   "format": "worktrace.source/1.0",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "files": [
     {
       "path": "Install-Skills.ps1",
@@ -74,13 +74,18 @@
     },
     {
       "path": "skills/worktrace-collector/SKILL.md",
-      "sha256": "e76d7aa71a8560d4bbb557c7b55b24d9dc99133c4f26f970baee4fac7180ff9d",
-      "size": 2948
+      "sha256": "e786e9bcc73c0910a096fcf915fad32828b21cfe78e6af9c792a7d154a6439e5",
+      "size": 3220
     },
     {
       "path": "skills/worktrace-collector/agents/openai.yaml",
       "sha256": "ca5b28d4cd038e12739eb45798500179807791e9bb2c74d3a4b59ef8f117f4ae",
       "size": 269
+    },
+    {
+      "path": "skills/worktrace-collector/references/external-records.md",
+      "sha256": "8b57bdbebea55b0f83600da2ceb2a1db35c9c28d6965c7f4d6121561b840645c",
+      "size": 2494
     },
     {
       "path": "skills/worktrace-collector/references/operations.md",
@@ -99,8 +104,8 @@
     },
     {
       "path": "skills/worktrace-personal/SKILL.md",
-      "sha256": "d3af4c9cdd1544f07303696f966f05c47d32f354b0d41c7f3121e73d14cf6762",
-      "size": 3358
+      "sha256": "eb1f54ed50db7c2148a03921a58accb2b6633080cf69ac98c9637b8c123ff87a",
+      "size": 4073
     },
     {
       "path": "skills/worktrace-personal/agents/openai.yaml",
@@ -114,8 +119,8 @@
     },
     {
       "path": "src/admin-cli.mjs",
-      "sha256": "d5e822552ee5c68ce0d2e03617111a6f9831193322f76ab5b215b7abd58a77fb",
-      "size": 2989
+      "sha256": "f57e8e5f9fd5d4fb0ae27924b86b5c524d66325ca517772480bd1cb5b8b10ff9",
+      "size": 3995
     },
     {
       "path": "src/analysis.mjs",
@@ -124,8 +129,8 @@
     },
     {
       "path": "src/candidates.mjs",
-      "sha256": "42b76c594c9f0ffd67dc4cf3af4ef6e036b26af516c66aeac1c4578019471b7b",
-      "size": 3493
+      "sha256": "2159ef4a7f7748cc05393242e8005595b9518cb39e63d798463b309843ae448c",
+      "size": 26406
     },
     {
       "path": "src/codex-runner.mjs",
@@ -138,9 +143,19 @@
       "size": 6266
     },
     {
+      "path": "src/external-records.mjs",
+      "sha256": "b18d07e7385bbd031480b78dd515e309e2f753449035b6d84ec4656b37023aff",
+      "size": 12690
+    },
+    {
       "path": "src/jobs.mjs",
       "sha256": "f33bd1a70f696b32196da0a0b6371ada0bf583a971c9b208f0a09c40c2d74a47",
       "size": 8008
+    },
+    {
+      "path": "src/knowledge.mjs",
+      "sha256": "b401d616c236d721e232485d4b9bde5ebe6c71597c09ef6631cf40ec69541602",
+      "size": 18010
     },
     {
       "path": "src/learning-schema.mjs",
@@ -149,8 +164,8 @@
     },
     {
       "path": "src/learning.mjs",
-      "sha256": "12b1086637548a1e67253cbf07c76d9688aba76599c96ba0014195924cd8b926",
-      "size": 12969
+      "sha256": "0dfd79972bc15d500854a50623c737ec1015dabdafaa1329774e00da2ebeec0c",
+      "size": 13016
     },
     {
       "path": "src/local-api.mjs",
@@ -159,8 +174,8 @@
     },
     {
       "path": "src/mcp.mjs",
-      "sha256": "ec8f093400476c3d70a033f4af5453f58c9f1b547f47860f21fd404b91c28773",
-      "size": 13403
+      "sha256": "9fafbd292646d4c7bf8f32abc2ca4f2cd906b7bc596afc9e301cddc004ce9f06",
+      "size": 16445
     },
     {
       "path": "src/messages.mjs",
@@ -169,8 +184,8 @@
     },
     {
       "path": "src/protocol.mjs",
-      "sha256": "96af91ae831ed308c2616815d31dd13b79cdc10ad9cae57ea50d504e22d79eee",
-      "size": 8409
+      "sha256": "65643e3d844f1f445ad70a7689f4a346337fb0d33267d15bd517290c4fc4007c",
+      "size": 9995
     },
     {
       "path": "src/report.mjs",
@@ -179,8 +194,8 @@
     },
     {
       "path": "src/server.mjs",
-      "sha256": "1e3532f883e0f77abede407bf04948a64fc299f3c8a7669130029ed698e69c06",
-      "size": 20083
+      "sha256": "0781708e8950fe743b2e66e72a7f94e0e5830461e218ad2aa492c3939cded6d5",
+      "size": 23009
     },
     {
       "path": "src/store.mjs",
@@ -194,8 +209,8 @@
     },
     {
       "path": "src/worker.mjs",
-      "sha256": "03940049954b218523976a5ecc022c6e6fb5803a3ee55dcf27454b5d1e6b40be",
-      "size": 11845
+      "sha256": "0db6aa5e7e31b1a8f1e7a01317a2da4fed3962e312cf3e779531da805a2959dc",
+      "size": 12080
     },
     {
       "path": "设置登录启动.ps1",

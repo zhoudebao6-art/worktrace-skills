@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:worktrace:event:1.0",
-  "title": "WorkTrace normalized event v1.0",
+  "$id": "urn:worktrace:event:1.1",
+  "title": "WorkTrace normalized event v1.0 and external evidence v1.1",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -25,7 +25,10 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "1.0"
+      "enum": [
+        "1.0",
+        "1.1"
+      ]
     },
     "event_id": {
       "type": "string",
@@ -186,6 +189,78 @@
           "kind": {
             "const": "window_capture"
           }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "source",
+        "source_instance",
+        "source_record_id",
+        "source_sha256",
+        "source_timestamp",
+        "evidence_kind",
+        "read_only",
+        "duration_seconds",
+        "source_type"
+      ],
+      "properties": {
+        "format": {
+          "const": "worktrace.external/1.0"
+        },
+        "source": {
+          "enum": [
+            "activitywatch",
+            "screenpipe"
+          ]
+        },
+        "source_instance": {
+          "type": "string",
+          "maxLength": 160,
+          "minLength": 1
+        },
+        "source_record_id": {
+          "type": "string",
+          "maxLength": 300,
+          "minLength": 1
+        },
+        "source_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "source_timestamp": {
+          "type": "string",
+          "maxLength": 80,
+          "minLength": 1
+        },
+        "evidence_kind": {
+          "enum": [
+            "activity_metadata",
+            "screen_text"
+          ]
+        },
+        "read_only": {
+          "const": true
+        },
+        "duration_seconds": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "exclusiveMaximum": 1000000000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "source_type": {
+          "type": "string",
+          "maxLength": 100,
+          "minLength": 1
         }
       }
     }
@@ -755,7 +830,8 @@
                   "idle",
                   "outside_schedule",
                   "status",
-                  "locked"
+                  "locked",
+                  "external_text"
                 ]
               },
               "idle_seconds": {
@@ -1102,7 +1178,8 @@
                   "idle",
                   "outside_schedule",
                   "status",
-                  "locked"
+                  "locked",
+                  "external_text"
                 ]
               },
               "idle_seconds": {
@@ -1156,7 +1233,8 @@
                   "idle",
                   "outside_schedule",
                   "status",
-                  "locked"
+                  "locked",
+                  "external_text"
                 ]
               },
               "idle_seconds": {
@@ -1210,7 +1288,8 @@
                   "idle",
                   "outside_schedule",
                   "status",
-                  "locked"
+                  "locked",
+                  "external_text"
                 ]
               },
               "idle_seconds": {
@@ -1224,6 +1303,93 @@
               "reason": {
                 "type": "string",
                 "maxLength": 500
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schema_version": {
+            "const": "1.1"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "provenance"
+        ],
+        "properties": {
+          "event_type": {
+            "const": "activity.snapshot"
+          },
+          "attachments": {
+            "maxItems": 0
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "provenance": {
+                  "properties": {
+                    "evidence_kind": {
+                      "const": "activity_metadata"
+                    }
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "payload": {
+                  "properties": {
+                    "text": {
+                      "const": ""
+                    },
+                    "capture_status": {
+                      "const": "activity_only"
+                    }
+                  }
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "provenance": {
+                  "properties": {
+                    "source": {
+                      "const": "screenpipe"
+                    }
+                  }
+                },
+                "payload": {
+                  "properties": {
+                    "capture_status": {
+                      "const": "external_text"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "provenance"
+          ]
+        },
+        "properties": {
+          "payload": {
+            "properties": {
+              "capture_status": {
+                "not": {
+                  "const": "external_text"
+                }
               }
             }
           }

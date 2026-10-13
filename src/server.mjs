@@ -1,5 +1,7 @@
 import {replyToJob,pendingReplies,acceptReplies,ackReplies,listReplies} from './messages.mjs';
-import {candidateList} from './candidates.mjs';
+import {candidateList,candidateEvaluate,candidateEvaluationHistory,candidateRevise,candidateRevisionHistory} from './candidates.mjs';
+import {knowledgeSearch,knowledgeRead} from './knowledge.mjs';
+import {normalizeExternalRecords,importExternalRecords} from './external-records.mjs';
 import http from 'node:http';
 import https from 'node:https';
 import { readFileSync,writeFileSync,mkdirSync,existsSync,renameSync } from 'node:fs';
@@ -10,7 +12,7 @@ import { randomBytes,timingSafeEqual } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { Store } from './store.mjs';
 import { Collector,defaultPolicy,validatePolicy } from './collector.mjs';
-import { uuid,hash,assert,str,id,MAX_BATCH,sealBundle,openBundle } from './protocol.mjs';
+import { uuid,hash,assert,str,id,keys,SOFTWARE_VERSION,MAX_BATCH,sealBundle,openBundle } from './protocol.mjs';
 import { tasks,addWork } from './work.mjs';
 import { report } from './report.mjs';
 import {LearningWorker} from './worker.mjs';
@@ -36,14 +38,23 @@ export async function startApp({dir=process.env.WORKTRACE_DATA||join(root,'data'
   }catch(e){json(res,400,{error:e.message});}
  });hub.requestTimeout=30000;hub.headersTimeout=10000;await new Promise((ok,no)=>{hub.once('error',no);hub.listen(config.hub_port,config.listen_host||'0.0.0.0',ok);});}
  async function synchronize(){if(!config||config.role!=='collector'||syncing)return {skipped:true};syncing=true;try{let sent=0;for(let i=0;i<10;i++){const batch=store.batch(store.get('sync_cursor')||0,20);const r=await postSync(config,{org_id:config.org_id,device_id:config.device_id,installation_id:config.installation_id,job_receipts:pendingReceipts(store),replies:pendingReplies(store),...batch});assert(Array.isArray(r.event_ids)&&r.event_ids.length===batch.events.length&&batch.events.every(e=>r.event_ids.includes(e.event_id)),'同步确认不完整，保留本地待重传');receiveRequests(store,config,r.learning_requests||[]);receiveJobs(store,config,r.jobs||[]);ackReceipts(store,r.job_acks||[]);ackReplies(store,r.reply_acks||[]);if(worker?.activeJob&&job(store,worker.activeJob)?.state==='cancelled')worker.controller?.abort();if(batch.events.length)store.set('sync_cursor',batch.events.at(-1).sequence);sent+=batch.events.length;lastSync=new Date().toISOString();lastError='';if(!batch.events.length||store.stats().pending===0)break;}return {sent};}catch(e){lastError=e.message;return {error:e.message};}finally{syncing=false;}}
- function status(){return {configured:!!config,role:config?.role||null,org_name:config?.org_name,org_id:config?.org_id,employee_id:config?.employee_id,employee_name:config?.employee_name,device_id:config?.device_id,hub_url:config?.hub_url,ips:ips(),stats:store.stats(),learning:learningStatus(store,config),worker:worker?.status()||null,devices:config?.role==='hub'?store.devices():[],collection:{enabled:!!collector?.enabled,state:collector?.state||'未启用采集',policy:collector?.policy||store.get('policy')||defaultPolicy,last_sample:collector?.lastSample||null},sync:{running:syncing,last_success:lastSync,error:lastError},protocol:'1.0',version:'0.2.0'};}
+ function status(){return {configured:!!config,role:config?.role||null,org_name:config?.org_name,org_id:config?.org_id,employee_id:config?.employee_id,employee_name:config?.employee_name,device_id:config?.device_id,hub_url:config?.hub_url,ips:ips(),stats:store.stats(),learning:learningStatus(store,config),worker:worker?.status()||null,devices:config?.role==='hub'?store.devices():[],collection:{enabled:!!collector?.enabled,state:collector?.state||'未启用采集',policy:collector?.policy||store.get('policy')||defaultPolicy,last_sample:collector?.lastSample||null},sync:{running:syncing,last_success:lastSync,error:lastError},protocol:'1.1',supported_protocols:['1.0','1.1'],version:SOFTWARE_VERSION};}
  const server=http.createServer(async(req,res)=>{
   try{
    assert(['127.0.0.1','localhost'].includes(String(req.headers.host||'').split(':')[0]),'拒绝非本机管理请求');const u=new URL(req.url,'http://127.0.0.1');
-   if(u.pathname==='/health'){json(res,200,{service:'worktrace',version:'0.2.0'});return;}
+   if(u.pathname==='/health'){json(res,200,{service:'worktrace',version:SOFTWARE_VERSION});return;}
    if(!u.pathname.startsWith('/api/')){const names={'/':'index.html','/app.js':'app.js','/style.css':'style.css'};const f=names[u.pathname];if(!f){json(res,404,{error:'不存在'});return;}res.writeHead(200,{'Content-Type':f.endsWith('.js')?'text/javascript; charset=utf-8':f.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; img-src 'self' blob:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"});res.end(readFileSync(join(root,'public',f)));return;}
    assert(safeEqual(req.headers.authorization,'Bearer '+token),'管理授权失效，请从启动程序重新打开面板');if(req.headers.origin)assert(req.headers.origin===`http://127.0.0.1:${server.address().port}`||req.headers.origin===`http://localhost:${server.address().port}`,'拒绝跨来源请求');
    if(req.method==='GET'&&u.pathname==='/api/status'){json(res,200,status());return;}
+   if(req.method==='GET'&&u.pathname==='/api/knowledge/search'){
+    assert(config,'请先配置角色');const q=Object.fromEntries(u.searchParams);
+    for(const k of ['limit','scan_limit'])if(Object.hasOwn(q,k))q[k]=Number(q[k]);
+    if(Object.hasOwn(q,'include_raw')){assert(['true','false'].includes(q.include_raw),'include_raw 必须为布尔值');q.include_raw=q.include_raw==='true';}
+    json(res,200,knowledgeSearch(store,config,q));return;
+   }
+   if(req.method==='GET'&&u.pathname==='/api/knowledge/read'){assert(config,'请先配置角色');json(res,200,knowledgeRead(store,config,Object.fromEntries(u.searchParams)));return;}
+   if(req.method==='GET'&&u.pathname==='/api/candidates/evaluations'){assert(config?.role==='hub','仅总控可读取候选验收');json(res,200,candidateEvaluationHistory(store,{candidate_id:u.searchParams.get('candidate_id'),org_id:config.org_id,limit:Number(u.searchParams.get('limit')||20)}));return;}
+   if(req.method==='GET'&&u.pathname==='/api/candidates/revisions'){assert(config?.role==='hub','仅总控可读取修订历史');const detail=u.searchParams.get('include_definitions')||'false';assert(['true','false'].includes(detail),'include_definitions 必须为布尔值');json(res,200,candidateRevisionHistory(store,{candidate_id:u.searchParams.get('candidate_id'),org_id:config.org_id,limit:Number(u.searchParams.get('limit')||(detail==='true'?3:20)),include_definitions:detail==='true'}));return;}
    if(req.method==='GET'&&u.pathname==='/api/personal/history'){assert(config,'请先配置角色');json(res,200,personalHistory(store,{employee:config.role==='collector'?config.employee_id:u.searchParams.get('employee')||'',limit:Number(u.searchParams.get('limit')||(u.searchParams.get('include_details')==='true'?5:20)),include_details:u.searchParams.get('include_details')==='true'}));return;}
    if(req.method==='GET'&&u.pathname==='/api/replies'){assert(config,'请先配置角色');json(res,200,listReplies(store,{device_id:config.role==='collector'?config.device_id:u.searchParams.get('device_id')||'',limit:Number(u.searchParams.get('limit')||30)}));return;}
    if(req.method==='GET'&&u.pathname==='/api/candidates'){assert(config?.role==='hub','仅总控可读取候选');json(res,200,candidateList(store,{candidate_id:u.searchParams.get('candidate_id')||'',limit:Number(u.searchParams.get('limit')||20)}));return;}
@@ -68,6 +79,17 @@ export async function startApp({dir=process.env.WORKTRACE_DATA||join(root,'data'
    }
    if(u.pathname==='/api/shutdown'){json(res,200,{ok:true});setTimeout(()=>close(),100);return;}
    assert(config,'请先配置本机角色');
+   if(u.pathname==='/api/import/external'){
+    assert(config.role==='collector','外部来源先在对应分控导入，再由既有通道汇总');
+    keys(b,['source','source_instance','timezone','from','to','input','dry_run'],['source','source_instance','timezone','from','to','input']);
+    assert(b.dry_run===undefined||typeof b.dry_run==='boolean','dry_run 必须为布尔值');
+    const {input,dry_run,...options}=b;
+    Object.assign(options,{org_id:config.org_id,device_id:config.device_id,employee_id:config.employee_id});
+    if(dry_run){const normalized=normalizeExternalRecords(input,options);json(res,200,{dry_run:true,report:normalized.report,event_count:normalized.events.length});}
+    else json(res,200,importExternalRecords(store,input,options));return;
+   }
+   if(u.pathname==='/api/candidates/evaluate'){assert(config.role==='hub','仅总控可记录候选验收');json(res,200,candidateEvaluate(store,{...b,org_id:config.org_id}));return;}
+   if(u.pathname==='/api/candidates/revise'){assert(config.role==='hub','仅总控可登记候选修订');json(res,200,candidateRevise(store,{...b,org_id:config.org_id}));return;}
    if(u.pathname==='/api/worker/configure'){json(res,200,worker.configure(b));return;}
    if(u.pathname==='/api/replies/create'){json(res,200,replyToJob(store,config,b));return;}
    if(u.pathname==='/api/jobs/enqueue'){assert(config.role==='hub','只有总控可下发任务');json(res,200,enqueueJob(store,b));return;}

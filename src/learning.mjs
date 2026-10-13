@@ -9,7 +9,7 @@ function init(s){s.db.exec(`
 `);if(!s.db.prepare('PRAGMA table_info(personal_batches)').all().some(x=>x.name==='coverage_json'))s.db.exec('ALTER TABLE personal_batches ADD COLUMN coverage_json TEXT');}
 const event=(s,eid)=>{const r=s.db.prepare('SELECT json FROM events WHERE event_id=?').get(eid);return r?JSON.parse(r.json):null;};
 const raw=e=>e.event_type!=='learning.summary';
-const preview=e=>({event_id:e.event_id,event_type:e.event_type,occurred_at:e.occurred_at,task_id:e.payload.task_id||null,case_id:e.context.case_id,app:e.app.process_name,preview:(e.payload.text||e.payload.content_text||e.payload.input_summary||'').slice(0,240),attachments:e.attachments});
+const preview=e=>({event_id:e.event_id,event_type:e.event_type,occurred_at:e.occurred_at,task_id:e.payload.task_id||null,case_id:e.context.case_id,app:e.app.process_name,preview:(e.payload.text||e.payload.content_text||e.payload.input_summary||'').slice(0,240),attachments:e.attachments,...(e.provenance?{provenance:e.provenance}:{})});
 function selectEvidence(s,c,limit,initial){
  const refs=[...initial],members=[],groups=new Map();let selected=0;
  const rows=s.db.prepare("SELECT e.json FROM events e LEFT JOIN personal_members m ON m.event_id=e.event_id WHERE m.event_id IS NULL AND e.event_type<>'learning.summary' AND e.device_id=? ORDER BY e.rowid LIMIT 1000").all(c.device_id);

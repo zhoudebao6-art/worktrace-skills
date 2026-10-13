@@ -2,6 +2,8 @@ import { createHash, randomUUID, randomBytes, scryptSync, createCipheriv, create
 import { gzipSync, gunzipSync } from 'node:zlib';
 import {validatePersonalPayload} from './learning-schema.mjs';
 export const VERSION='1.0';
+export const EXTERNAL_VERSION='1.1';
+export const SOFTWARE_VERSION='0.3.0';
 export const MAX_ASSET=2*1024*1024, MAX_BATCH=50, MAX_ARCHIVE=100*1024*1024;
 export const uuid=()=>randomUUID();
 export const hash=b=>createHash('sha256').update(b).digest('hex');
@@ -12,8 +14,20 @@ export function str(v,max=200){return typeof v==='string'&&v.length<=max;}
 export function id(v){return typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(v);}
 export function utc(v){return typeof v==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(v)&&Number.isFinite(Date.parse(v));}
 export function validateEvent(e){
- keys(e,['schema_version','event_id','org_id','device_id','employee_id','stream_id','sequence','session_id','occurred_at','timezone','event_type','collector_version','policy_hash','app','context','payload','attachments']);
- assert(e.schema_version===VERSION,'不支持的数据规范版本');for(const k of ['event_id','org_id','device_id','stream_id','session_id'])assert(id(e[k]),'无效编号: '+k);
+ const fields=['schema_version','event_id','org_id','device_id','employee_id','stream_id','sequence','session_id','occurred_at','timezone','event_type','collector_version','policy_hash','app','context','payload','attachments'];
+ keys(e,[...fields,'provenance'],fields);
+ assert([VERSION,EXTERNAL_VERSION].includes(e.schema_version),'不支持的数据规范版本');for(const k of ['event_id','org_id','device_id','stream_id','session_id'])assert(id(e[k]),'无效编号: '+k);
+ if(e.schema_version===EXTERNAL_VERSION){
+  assert(e.event_type==='activity.snapshot'&&e.provenance,'1.1 事件仅用于带来源的外部活动记录');
+  const p=e.provenance;
+  keys(p,['format','source','source_instance','source_record_id','source_sha256','source_timestamp','evidence_kind','read_only','duration_seconds','source_type']);
+  assert(p.format==='worktrace.external/1.0'&&['activitywatch','screenpipe'].includes(p.source),'外部来源无效');
+  for(const [k,max] of [['source_instance',160],['source_record_id',300],['source_timestamp',80],['source_type',100]])assert(str(p[k],max)&&p[k].trim(),'外部来源字段无效: '+k);
+  assert(/^[a-f0-9]{64}$/.test(p.source_sha256)&&p.read_only===true,'外部记录需要来源摘要及只读标记');
+  assert(['activity_metadata','screen_text'].includes(p.evidence_kind)&&(p.duration_seconds===null||Number.isFinite(p.duration_seconds)&&p.duration_seconds>=0&&p.duration_seconds<1e9),'外部证据类型或时长无效');
+  assert(e.attachments?.length===0,'本版外部导入不包含媒体附件');
+  assert(p.evidence_kind==='activity_metadata'?e.payload?.text===''&&e.payload.capture_status==='activity_only':p.source==='screenpipe'&&e.payload?.capture_status==='external_text','外部活动和内容来源不可混淆');
+ }else assert(!Object.hasOwn(e,'provenance')&&e.payload?.capture_status!=='external_text','外部来源必须使用 1.1 规范');
  assert(str(e.employee_id,80)&&/^[\p{L}\p{N}_.-]+$/u.test(e.employee_id),'无效员工编号');
  assert(Number.isSafeInteger(e.sequence)&&e.sequence>0,'无效序列号');assert(utc(e.occurred_at),'时间必须为 UTC 毫秒格式');
  assert(str(e.timezone,100)&&e.timezone.length>0,'缺少时区');try{new Intl.DateTimeFormat('en',{timeZone:e.timezone});}catch{throw new Error('无效时区');}
@@ -25,7 +39,7 @@ export function validateEvent(e){
  if(e.event_type==='learning.summary'){validatePersonalPayload(e.payload);assert(e.attachments.length===0,'总结不得混入原始附件');}
  else if(e.event_type.startsWith('task.')||e.event_type.startsWith('artifact.'))validateWork(e);
  else {keys(e.payload,['text','capture_status','idle_seconds','truncated','reason']);assert(str(e.payload.text,12000)&&str(e.payload.reason,500),'内容超过限制');
- assert(['activity_only','uia','unavailable','excluded','idle','outside_schedule','status','locked'].includes(e.payload.capture_status),'无效采集状态');
+ assert(['activity_only','uia','external_text','unavailable','excluded','idle','outside_schedule','status','locked'].includes(e.payload.capture_status),'无效采集状态');
  assert(Number.isFinite(e.payload.idle_seconds)&&e.payload.idle_seconds>=0&&e.payload.idle_seconds<1e9&&typeof e.payload.truncated==='boolean','无效采样信息');}
  assert(Array.isArray(e.attachments)&&e.attachments.length<=1,'每个事件最多一张截图');
  for(const a of e.attachments){keys(a,['sha256','size','mime','kind']);assert(/^[a-f0-9]{64}$/.test(a.sha256)&&Number.isInteger(a.size)&&a.size>0&&a.size<=MAX_ASSET&&a.mime==='image/jpeg'&&a.kind==='window_capture','附件信息无效');}

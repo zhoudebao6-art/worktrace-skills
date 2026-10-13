@@ -33,4 +33,6 @@ description: 由总控 Codex 从随技能源码搭建 WorkTrace 环境，准备�
 
 用户要求整理 skill/loop 时，读取 [references/candidate.md](references/candidate.md)。输出候选文件、引用证据和独立验收用例，先在离线样例上评估，不把员工个别习惯直接发布为公司规则。
 
+需要比较已有方法时，按 [references/knowledge.md](references/knowledge.md) 逐个员工、设备和日期检索；先看摘要和缺口，再取单条证据。外部来源记录须保留 provenance，元数据、可见文本与模型结论不能互相替代。候选评估用 `worktrace_candidate_evaluate` 保存独立案例记录，再查 `worktrace_candidate_evaluations`；只有可核对的记录能产生离线验收结果，结果不授予执行权限。
+
 结束巡检时报告新增发现、故障或待补资料。无变化不反复分析；不启动无限 codex exec、鼠标接管或微信回复。受控任务通道已提供 worktrace_enqueue_job/node_jobs/cancel_job；分控服务下次同步领取任务，本机执行器启用后调用 Codex。只有收到任务回执才能报告其执行状态。node.status/message 不调用模型，message 不代表员工已读。worktrace_node_replies 可看分控 AI 回复。总控保存分析后用 worktrace_candidates 查看自动建立的候选草稿，按 candidate.md 完善并验证；不自动发布。
