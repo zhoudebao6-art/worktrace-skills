@@ -4,14 +4,16 @@
 
 ## 1. 在指定总控电脑取源码和安装技能
 
-使用 GitHub 页面下载源码或在该电脑克隆本仓库。私有仓库需授权账号；不要把 GitHub 凭据放到员工接入文件。示例将源码保存到 `D:\WorkTraceSource`。
+按 [下载与分发方法](download.md) 取得所有者提供的专用发布 ZIP 和 SHA256 校验文件，校验后解压到独立源码目录。员工无需 Git/GitHub；不要把 GitHub 凭据放到员工接入文件。示例源码目录为 `D:\WorkTraceSource`，应包含 `.worktrace-source.json`。
 
 ```powershell
+Set-Location -LiteralPath 'D:\WorkTraceSource'
+powershell -NoProfile -ExecutionPolicy Bypass -File '.\scripts\Install-SharedSkills.ps1' -Role hub
+if ($LASTEXITCODE -ne 0) { throw '技能安装未完成，请先检查错误。' }
 $skillDest = Join-Path $env:USERPROFILE '.agents\skills\worktrace-hub'
-if (Test-Path -LiteralPath $skillDest) { throw '已有同名技能，请保留原版并检查来源，勿覆盖。' }
-New-Item -ItemType Directory -Path (Split-Path $skillDest -Parent) -Force | Out-Null
-Copy-Item -LiteralPath 'D:\WorkTraceSource\skills\worktrace-hub' -Destination $skillDest -Recurse
 ```
+
+安装器记录来源和文件校验值，供以后 `-Update` 验证。旧版手动复制或目录链接安装没有该记录，遇到同名技能时应先保留、检查来源和部署绑定，再安排迁移，不直接覆盖。安装技能本身不会启动生产服务。
 
 在总控 Codex 新开对话，发：
 

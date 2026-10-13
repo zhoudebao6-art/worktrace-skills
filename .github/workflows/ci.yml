@@ -1,0 +1,47 @@
+name: WorkTrace CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: worktrace-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-and-tests:
+    name: source-and-tests
+    runs-on: windows-2022
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Prepare isolated temporary paths
+        run: |
+          $taskRoot = if (Test-Path -LiteralPath 'D:\') { 'D:\codex+' } else { Join-Path $env:RUNNER_TEMP 'codex' }
+          $taskTemp = Join-Path $taskRoot 'temp'
+          $taskCache = Join-Path $taskRoot 'cache\worktrace'
+          New-Item -ItemType Directory -Force -Path $taskTemp, $taskCache | Out-Null
+          foreach ($name in @('TEMP', 'TMP', 'TMPDIR')) { "$name=$taskTemp" >> $env:GITHUB_ENV }
+          "NODE_COMPILE_CACHE=$(Join-Path $taskCache 'node')" >> $env:GITHUB_ENV
+          "npm_config_cache=$(Join-Path $taskCache 'npm')" >> $env:GITHUB_ENV
+      - name: Checkout source
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Set up pinned Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22.23.2'
+          check-latest: false
+      - name: Verify source, skill references and engine mirror
+        run: node scripts/verify-source.mjs
+      - name: Run synthetic tests
+        # Only *.test.mjs: no provisioning, desktop capture, browser or live model verification.
+        run: node --test tests/*.test.mjs

@@ -26,3 +26,7 @@ work/
 任务与人工修改预览.png
 
 *.local.json
+**/.worktrace-install.json
+**/.worktrace-install-backup*/
+**/.worktrace-backups/
+.worktrace-source.json

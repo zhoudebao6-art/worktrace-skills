@@ -1,11 +1,11 @@
 {
   "format": "worktrace.source/1.0",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "files": [
     {
       "path": "Install-Skills.ps1",
-      "sha256": "af76f37978816640484be354960928005f5afe3c1cbbd2589b5ed8848740ae02",
-      "size": 1994
+      "sha256": "e6732ba8f8331ea4f080a1f1ab49cbb98a75a987aff6a889dc5cc6a243150f96",
+      "size": 4049
     },
     {
       "path": "Start.ps1",
