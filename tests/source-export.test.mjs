@@ -15,7 +15,7 @@ function fixture(t){
   t.after(()=>{assert(resolve(workspace).startsWith(temp+sep));rmSync(workspace,{recursive:true,force:true});});
   const git=(...args)=>execFileSync(process.env.WORKTRACE_GIT||'git',['-C',root,...args],{encoding:'utf8',windowsHide:true,stdio:['ignore','pipe','pipe']});
   const put=(path,bytes)=>{mkdirSync(dirname(join(root,path)),{recursive:true});writeFileSync(join(root,path),bytes);};
-  const source=['src/server.mjs','bridge/observe.ps1','public/index.html','Start.ps1','Tray.ps1','Install-Skills.ps1','连接Codex.ps1','设置登录启动.ps1','runtime/NODE-LICENSE.txt','scripts/provision-common.ps1','scripts/Ensure-Runtime.ps1','scripts/Configure-Learning.ps1','scripts/Join-Node.ps1','scripts/skill-control.ps1'];
+  const source=['src/server.mjs','bridge/observe.ps1','public/index.html','Start.ps1','Tray.ps1','Install-Skills.ps1','连接Codex.ps1','设置登录启动.ps1','runtime/NODE-LICENSE.txt','scripts/provision-common.ps1','scripts/Ensure-Runtime.ps1','scripts/Configure-Learning.ps1','scripts/Join-Node.ps1','scripts/Initialize-OfflineNode.ps1','scripts/Offline-Handoff.ps1','scripts/skill-control.ps1'];
   for(const path of source)put(path,'synthetic source\n');
   for(const role of ['hub','collector','evidence','personal']){const path=`skills/worktrace-${role}/SKILL.md`;put(path,`---\nname: worktrace-${role}\ndescription: Synthetic export test.\n---\n`);if(role!=='hub')source.push(path);}
   const files=source.map(path=>{const bytes=readFileSync(join(root,path));put(mirror+'/'+path,bytes);return {path,sha256:sha(bytes),size:bytes.length};});

@@ -7,6 +7,8 @@ description: 由总控 Codex 从随技能源码搭建 WorkTrace 环境，准备�
 
 ## 部署与查询
 
+收到总控上线前建立的离线分控移交包时，先读 [references/offline-handoff.md](references/offline-handoff.md)。新总控须明确接纳原公司和设备编号再归并；不能重新随机建公司后重写旧事件解决身份不匹配。完整包可跨局域网人工带回，离线设备没有心跳是正常状态。
+
 不制作安装包，不让员工自己编写采集程序。技能内 `assets/engine` 是经过校验的服务源码；bootstrap 首次准备经官方 SHA256 校验的固定 Node 运行时；总控按脚本准备环境，不临时重造采集器。先读 [references/deployment.md](references/deployment.md)。
 
 首次用 `scripts/bootstrap.ps1 -WorkDir <公司指定独立数据目录>` 搭建指定总控电脑的服务并登记 MCP；它生成不含密钥的 deployment.json。后续使用 `scripts/control.ps1 -Action start` 启动、`-Action status` 检查。不要打印 data/config.json、running.json 或登记文件，它们包含密钥。

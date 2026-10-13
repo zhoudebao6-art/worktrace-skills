@@ -1,3 +1,4 @@
+import {SOFTWARE_VERSION} from './protocol.mjs';
 import {uuid,hash,canonical,assert,id,VERSION} from './protocol.mjs';
 import {validatePersonalPayload} from './learning-schema.mjs';
 import {defaultPolicy} from './collector.mjs';
@@ -21,7 +22,10 @@ function selectEvidence(s,c,limit,initial){
   if(!refs.includes(e.event_id))refs.push(e.event_id);members.push(e.event_id);selected++;
   if(key)groups.set(key,{app:e.app.process_name||'(none)',status:e.payload.capture_status,count:1,evidence_event_id:e.event_id,from:e.occurred_at,to:e.occurred_at});
  }
- const representative=refs.length;const taskIds=new Set(refs.map(x=>event(s,x)?.payload.task_id).filter(Boolean));
+ const representative=refs.length;
+ // Include prior saved file version for grounded change analysis, without consuming it again.
+ for(const eid of [...refs]){const previous=event(s,eid)?.payload.previous_event_id;if(previous&&refs.length<120&&!refs.includes(previous))refs.push(previous);}
+const taskIds=new Set(refs.map(x=>event(s,x)?.payload.task_id).filter(Boolean));
  // Task origin, parent versions and feedback may precede this batch. Add context,
  // without marking that context newly analysed or silently consuming later work.
  for(const tid of taskIds){const origin=s.db.prepare("SELECT event_id FROM events WHERE device_id=? AND json_extract(json,'$.payload.task_id')=? AND event_type='task.created' ORDER BY rowid LIMIT 1").all(c.device_id,tid);const parents=refs.map(x=>event(s,x)?.payload.parent_event_id).filter(Boolean).map(event_id=>({event_id}));const recent=s.db.prepare("SELECT event_id FROM events WHERE device_id=? AND json_extract(json,'$.payload.task_id')=? ORDER BY rowid DESC LIMIT 20").all(c.device_id,tid);for(const r of [...origin,...parents,...recent])if(refs.length<120&&!refs.includes(r.event_id))refs.push(r.event_id);}
@@ -59,10 +63,10 @@ export function savePersonal(s,c,p){
  const refs=JSON.parse(b.refs_json);const payload={format:'worktrace.personal/1.0',batch_id:b.batch_id,digest:b.digest,source_coverage:b.coverage_json?JSON.parse(b.coverage_json):{new_events:refs.length,representative_events:refs.length,context_events:0,metadata_groups:[]},request_id:b.request_id,request_state:p.request_state||'none',evidence_event_ids:refs,result:p.result};validatePersonalPayload(payload);
  const existing=s.db.prepare("SELECT json FROM events WHERE event_type='learning.summary' AND json_extract(json,'$.payload.batch_id')=?").get(b.batch_id);
  let e;if(existing){e=JSON.parse(existing.json);assert(canonical(e.payload)===canonical(payload),'已保存不同总结，禁止静默覆盖');}
- else e=s.append({schema_version:VERSION,event_id:uuid(),org_id:c.org_id,device_id:c.device_id,employee_id:c.employee_id,session_id:uuid(),occurred_at:new Date().toISOString(),timezone:(s.get('policy')||defaultPolicy).timezone,event_type:'learning.summary',collector_version:'0.2.0',policy_hash:s.policy(s.get('policy')||defaultPolicy),app:{process_name:'codex',window_title:''},context:{case_id:null,conversation_id:null,sender_id:null,identity_source:'device_assignment'},payload,attachments:[]});
+ else e=s.append({schema_version:VERSION,event_id:uuid(),org_id:c.org_id,device_id:c.device_id,employee_id:c.employee_id,session_id:uuid(),occurred_at:new Date().toISOString(),timezone:(s.get('policy')||defaultPolicy).timezone,event_type:'learning.summary',collector_version:SOFTWARE_VERSION,policy_hash:s.policy(s.get('policy')||defaultPolicy),app:{process_name:'codex',window_title:''},context:{case_id:null,conversation_id:null,sender_id:null,identity_source:'device_assignment'},payload,attachments:[]});
  s.db.prepare("UPDATE personal_batches SET status='done',result_event_id=? WHERE batch_id=?").run(e.event_id,b.batch_id);
  if(b.request_id)s.db.prepare('UPDATE learning_requests SET state=?,result_event_id=? WHERE request_id=?').run(payload.request_state,e.event_id,b.request_id);
- return {saved:true,duplicate:!!existing,event_id:e.event_id,sync:'queued',semantic_validation:'not_proven'};
+ return {saved:true,duplicate:!!existing,event_id:e.event_id,sync:c.connection_mode==='offline'?'awaiting_offline_handoff':'queued',semantic_validation:'not_proven'};
 }
 export function personalHistory(s,{employee='',limit=20,include_details=false}={}){assert(typeof employee==='string'&&employee.length<=80&&Number.isInteger(limit)&&limit>=1&&limit<=(include_details?5:100),'查询范围无效；完整总结每次最多五份');return s.db.prepare("SELECT json FROM events WHERE event_type='learning.summary'"+(employee?' AND employee_id=?':'')+' ORDER BY rowid DESC LIMIT ?').all(...(employee?[employee]:[]),limit).map(x=>{const e=JSON.parse(x.json);return include_details?e:{event_id:e.event_id,employee_id:e.employee_id,device_id:e.device_id,occurred_at:e.occurred_at,summary:e.payload.result.summary.slice(0,400),coverage:e.payload.result.coverage,procedure_count:e.payload.result.procedures.length,evidence_count:e.payload.evidence_event_ids.length,source_coverage:e.payload.source_coverage,open_questions:e.payload.result.open_questions.slice(0,6),details_omitted:true};});}
 export function learningStatus(s,c){init(s);const summaries=s.db.prepare("SELECT COUNT(*) n,MAX(occurred_at) latest FROM events WHERE event_type='learning.summary'").get();if(c?.role!=='collector')return {summary_count:summaries.n,last_summary_at:summaries.latest};return {summary_count:summaries.n,last_summary_at:summaries.latest,raw_unassigned:s.db.prepare("SELECT COUNT(*) n FROM events e LEFT JOIN personal_members m ON m.event_id=e.event_id WHERE m.event_id IS NULL AND e.event_type<>'learning.summary' AND e.device_id=?").get(c.device_id).n,open_batches:s.db.prepare("SELECT COUNT(*) n FROM personal_batches WHERE status='open'").get().n,pending_questions:s.db.prepare("SELECT COUNT(*) n FROM learning_requests WHERE state='open'").get().n,scheduler:'optional_local_worker_or_manual_codex'};}

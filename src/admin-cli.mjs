@@ -11,7 +11,7 @@ export async function admin({command,role,dir=join(root,'data'),input,output,rec
  if(command==='shutdown')return localApi(dir,'shutdown',{});
  if(command==='init'){
   if(status.configured)return {already_configured:true,...status};
-  return localApi(dir,'setup',role==='hub'?{...data,role:'hub'}:{role:'collector',enrollment:data});
+  return localApi(dir,'setup',role==='hub'?{...data,role:'hub'}:{role:'collector',...(data.format==='worktrace.offline-identity/1.0'?{offline:data}:{enrollment:data})});
  }
  if(!status.configured)throw Error('请先初始化本机');
  if(command==='import-external'){
@@ -33,6 +33,12 @@ export async function admin({command,role,dir=join(root,'data'),input,output,rec
   const enrollment=await localApi(dir,'devices',data);writeFileSync(dest,JSON.stringify(enrollment,null,2),{flag:'wx',mode:0o600});
   return {saved:dest,device_id:enrollment.device_id,employee_id:enrollment.employee_id};
  }
+ if(command==='personal-digest')return localApi(dir,'personal/digest',data);
+ if(command==='file-extract'){if(!output||existsSync(resolve(output)))throw Error('需要未存在的 --output 原件保存路径');const result=await localApi(dir,'files/original?event_id='+encodeURIComponent(data.event_id),undefined,{binary:true});mkdirSync(dirname(resolve(output)),{recursive:true});writeFileSync(resolve(output),result.bytes,{flag:'wx',mode:0o600});return {path:resolve(output),bytes:result.bytes.length};}
+ if(command==='files-configure')return localApi(dir,'files/configure',data);
+ if(command==='files-scan')return localApi(dir,'files/scan',{});
+ if(command==='adopt-offline-device')return localApi(dir,'offline/adopt-device',data);
+ if(command==='worker-retry-local')return localApi(dir,'worker/retry-local',data);
  if(command==='worker-configure')return localApi(dir,'worker/configure',data);
  if(command==='worker-run')return localApi(dir,'worker/run',{});
  if(command==='candidates')return localApi(dir,'candidates?'+new URLSearchParams(data));

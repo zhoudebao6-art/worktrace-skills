@@ -7,7 +7,7 @@ import {execFileSync} from 'node:child_process';
 const mirror='skills/worktrace-hub/assets/engine';
 const manifestPath=mirror+'/engine-manifest.json';
 const sourceDirectories=['src','bridge','public','skills/worktrace-collector','skills/worktrace-evidence','skills/worktrace-personal'];
-const sourceFiles=['Start.ps1','Tray.ps1','Install-Skills.ps1','连接Codex.ps1','设置登录启动.ps1','runtime/NODE-LICENSE.txt','scripts/provision-common.ps1','scripts/Ensure-Runtime.ps1','scripts/Configure-Learning.ps1','scripts/Join-Node.ps1','scripts/skill-control.ps1'];
+const sourceFiles=['Start.ps1','Tray.ps1','Install-Skills.ps1','连接Codex.ps1','设置登录启动.ps1','runtime/NODE-LICENSE.txt','scripts/provision-common.ps1','scripts/Ensure-Runtime.ps1','scripts/Configure-Learning.ps1','scripts/Join-Node.ps1','scripts/Initialize-OfflineNode.ps1','scripts/Offline-Handoff.ps1','scripts/skill-control.ps1'];
 const requiredFiles=['src/server.mjs','bridge/observe.ps1','public/index.html',...sourceFiles,...['hub','collector','evidence','personal'].map(role=>`skills/worktrace-${role}/SKILL.md`)];
 const sha256=bytes=>createHash('sha256').update(bytes).digest('hex');
 const sourcePath=path=>sourceFiles.includes(path)||sourceDirectories.some(dir=>path.startsWith(dir+'/'));
@@ -29,8 +29,8 @@ export function verifySource(root,{files=trackedFiles(root),maxFileBytes=5*1024*
     if(!validPath(path)){fail(`Unsafe tracked path: ${path}`);continue;}
     const name=posix.basename(path).toLowerCase(),parts=path.toLowerCase().split('/');
     const forbidden=parts.some(part=>['data','node_modules','__pycache__','runtime-cache','runtime-temp','.codex','.ssh'].includes(part))||
-      ['node.exe','deployment.json','enrollment.json','running.json','config.json','join.json','roster.json','hub.json','auth.json','.env','.git-credentials'].includes(name)||
-      /\.(?:sqlite(?:3)?(?:-wal|-shm)?|db|pfx|p12|pem|key|wpack|enroll\.json)$/i.test(name)||/^\.env\./.test(name)&&!name.endsWith('.example');
+      ['node.exe','deployment.json','enrollment.json','running.json','config.json','join.json','roster.json','hub.json','offline-identity.json','handoff-manifest.json','auth.json','.env','.git-credentials'].includes(name)||
+      /\.(?:sqlite(?:3)?(?:-wal|-shm)?|db|pfx|p12|pem|key|wpack|wthandoff|enroll\.json)$/i.test(name)||/^\.env\./.test(name)&&!name.endsWith('.example');
     if(forbidden)fail(`Production data, credential or generated file must not be tracked: ${path}`);
     let bytes;try{const stat=lstatSync(join(root,path));if(!stat.isFile()||stat.isSymbolicLink()){fail(`Tracked entry must be a regular file: ${path}`);continue;}if(stat.size>maxFileBytes){fail(`Tracked file exceeds ${maxFileBytes} bytes: ${path}`);continue;}bytes=readFileSync(join(root,path));contents.set(path,bytes);}catch{fail(`Cannot read tracked file: ${path}`);continue;}
     if(bytes.subarray(0,16).toString('binary')==='SQLite format 3\0')fail(`SQLite content must not be tracked: ${path}`);

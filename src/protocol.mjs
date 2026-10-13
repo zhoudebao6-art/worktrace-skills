@@ -3,7 +3,7 @@ import { gzipSync, gunzipSync } from 'node:zlib';
 import {validatePersonalPayload} from './learning-schema.mjs';
 export const VERSION='1.0';
 export const EXTERNAL_VERSION='1.1';
-export const SOFTWARE_VERSION='0.3.0';
+export const SOFTWARE_VERSION='0.4.0';
 export const MAX_ASSET=2*1024*1024, MAX_BATCH=50, MAX_ARCHIVE=100*1024*1024;
 export const uuid=()=>randomUUID();
 export const hash=b=>createHash('sha256').update(b).digest('hex');
@@ -16,7 +16,8 @@ export function utc(v){return typeof v==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{
 export function validateEvent(e){
  const fields=['schema_version','event_id','org_id','device_id','employee_id','stream_id','sequence','session_id','occurred_at','timezone','event_type','collector_version','policy_hash','app','context','payload','attachments'];
  keys(e,[...fields,'provenance'],fields);
- assert([VERSION,EXTERNAL_VERSION].includes(e.schema_version),'不支持的数据规范版本');for(const k of ['event_id','org_id','device_id','stream_id','session_id'])assert(id(e[k]),'无效编号: '+k);
+ assert([VERSION,EXTERNAL_VERSION,'1.2'].includes(e.schema_version),'不支持的数据规范版本');for(const k of ['event_id','org_id','device_id','stream_id','session_id'])assert(id(e[k]),'无效编号: '+k);
+ assert((e.schema_version==='1.2')===(e.event_type==='document.version'),'文件证据必须使用 1.2 规范');
  if(e.schema_version===EXTERNAL_VERSION){
   assert(e.event_type==='activity.snapshot'&&e.provenance,'1.1 事件仅用于带来源的外部活动记录');
   const p=e.provenance;
@@ -31,12 +32,20 @@ export function validateEvent(e){
  assert(str(e.employee_id,80)&&/^[\p{L}\p{N}_.-]+$/u.test(e.employee_id),'无效员工编号');
  assert(Number.isSafeInteger(e.sequence)&&e.sequence>0,'无效序列号');assert(utc(e.occurred_at),'时间必须为 UTC 毫秒格式');
  assert(str(e.timezone,100)&&e.timezone.length>0,'缺少时区');try{new Intl.DateTimeFormat('en',{timeZone:e.timezone});}catch{throw new Error('无效时区');}
- assert(['activity.snapshot','collector.started','collector.paused','collector.gap','task.created','task.transition','artifact.version','artifact.feedback','learning.summary'].includes(e.event_type),'未知事件类型');
+ assert(['activity.snapshot','collector.started','collector.paused','collector.gap','task.created','task.transition','artifact.version','artifact.feedback','learning.summary','document.version'].includes(e.event_type),'未知事件类型');
  assert(str(e.collector_version,40)&&/^[a-f0-9]{64}$/.test(e.policy_hash),'版本或采集策略摘要无效');
  keys(e.app,['process_name','window_title']);assert(str(e.app.process_name,100)&&str(e.app.window_title,500),'应用字段过长');
  keys(e.context,['case_id','conversation_id','sender_id','identity_source']);for(const k of ['case_id','conversation_id','sender_id'])assert(e.context[k]===null||str(e.context[k],160),'上下文无效');
  assert(e.context.identity_source==='device_assignment','人员归属来源无效');
  if(e.event_type==='learning.summary'){validatePersonalPayload(e.payload);assert(e.attachments.length===0,'总结不得混入原始附件');}
+ else if(e.event_type==='document.version'){
+  const p=e.payload;keys(p,['file_sha256','path','extension','mime','size','modified_at','previous_event_id','text','parser','parser_version','capture_status','gaps']);
+  assert(/^[a-f0-9]{64}$/.test(p.file_sha256)&&str(p.path,2000)&&p.path.length>0&&['.txt','.md','.csv','.pdf','.docx','.xlsx'].includes(p.extension)&&str(p.mime,160),'文件来源无效');
+  assert(Number.isInteger(p.size)&&p.size>0&&p.size<=20*1024*1024&&utc(p.modified_at)&&(p.previous_event_id===null||id(p.previous_event_id)),'文件版本元数据无效');
+  assert(str(p.text,60000)&&['builtin-text','ooxml','original-only'].includes(p.parser)&&p.parser_version==='1.0'&&['text_extracted','partial','unparsed'].includes(p.capture_status),'文件解析结果无效');
+  assert(Array.isArray(p.gaps)&&p.gaps.length<=20&&p.gaps.every(x=>str(x,1000))&&Array.isArray(e.attachments)&&e.attachments.length===0,'文件证据缺口或附件无效');
+  assert(p.capture_status!=='unparsed'||p.text==='','未解析文件不得伪造正文');
+ }
  else if(e.event_type.startsWith('task.')||e.event_type.startsWith('artifact.'))validateWork(e);
  else {keys(e.payload,['text','capture_status','idle_seconds','truncated','reason']);assert(str(e.payload.text,12000)&&str(e.payload.reason,500),'内容超过限制');
  assert(['activity_only','uia','external_text','unavailable','excluded','idle','outside_schedule','status','locked'].includes(e.payload.capture_status),'无效采集状态');
@@ -55,4 +64,4 @@ export function validateWork(e){const p=e.payload;assert(e.context.case_id&&e.at
 }
 export function validateAsset(a){keys(a,['sha256','mime','data']);assert(typeof a.data==='string'&&a.data.length<=Math.ceil(MAX_ASSET*4/3)+4,'附件过大');const b=Buffer.from(a.data,'base64');assert(b.length>0&&b.length<=MAX_ASSET&&b.toString('base64')===a.data,'附件编码无效');assert(hash(b)===a.sha256&&a.mime==='image/jpeg','附件校验失败');assert(b[0]===0xff&&b[1]===0xd8&&b[b.length-2]===0xff&&b[b.length-1]===0xd9,'不是 JPEG 文件');return b;}
 export function sealBundle(bundle,password){assert(str(password,200)&&password.length>=12,'导出密码至少 12 个字符');const raw=Buffer.from(JSON.stringify(bundle));assert(raw.length<=MAX_ARCHIVE,'导出数据超过 100MB，请缩小日期范围');const salt=randomBytes(16),iv=randomBytes(12),key=scryptSync(password,salt,32),cipher=createCipheriv('aes-256-gcm',key,iv);const header=Buffer.concat([Buffer.from('WTRACE01'),salt,iv]);cipher.setAAD(header);const data=Buffer.concat([cipher.update(gzipSync(raw)),cipher.final()]);return Buffer.concat([header,cipher.getAuthTag(),data]);}
-export function openBundle(bytes,password){assert(bytes.length<MAX_ARCHIVE&&bytes.length>52&&bytes.subarray(0,8).toString()==='WTRACE01','数据包格式或大小无效');assert(str(password,200)&&password.length>=12,'导入密码无效');const head=bytes.subarray(0,36),key=scryptSync(password,bytes.subarray(8,24),32),dec=createDecipheriv('aes-256-gcm',key,bytes.subarray(24,36));dec.setAAD(head);dec.setAuthTag(bytes.subarray(36,52));let raw;try{raw=gunzipSync(Buffer.concat([dec.update(bytes.subarray(52)),dec.final()]),{maxOutputLength:MAX_ARCHIVE});}catch{throw new Error('密码错误、数据包被修改或解压大小超限');}const b=JSON.parse(raw.toString('utf8'));keys(b,['format','exported_at','org_id','devices','events','assets','policies']);assert(b.format==='worktrace.bundle/1.0'&&id(b.org_id)&&utc(b.exported_at),'不支持的导出格式');assert(Array.isArray(b.events)&&b.events.length<=10000&&Array.isArray(b.assets)&&b.assets.length<=10000&&Array.isArray(b.devices)&&b.devices.length<=10000,'数据包记录过多');return b;}
+export function openBundle(bytes,password){assert(bytes.length<MAX_ARCHIVE&&bytes.length>52&&bytes.subarray(0,8).toString()==='WTRACE01','数据包格式或大小无效');assert(str(password,200)&&password.length>=12,'导入密码无效');const head=bytes.subarray(0,36),key=scryptSync(password,bytes.subarray(8,24),32),dec=createDecipheriv('aes-256-gcm',key,bytes.subarray(24,36));dec.setAAD(head);dec.setAuthTag(bytes.subarray(36,52));let raw;try{raw=gunzipSync(Buffer.concat([dec.update(bytes.subarray(52)),dec.final()]),{maxOutputLength:MAX_ARCHIVE});}catch{throw new Error('密码错误、数据包被修改或解压大小超限');}const b=JSON.parse(raw.toString('utf8'));keys(b,['format','exported_at','org_id','devices','events','assets','policies','files'],['format','exported_at','org_id','devices','events','assets','policies']);assert(['worktrace.bundle/1.0','worktrace.bundle/1.1'].includes(b.format)&&id(b.org_id)&&utc(b.exported_at),'不支持的导出格式');assert(Array.isArray(b.events)&&b.events.length<=10000&&Array.isArray(b.assets)&&b.assets.length<=10000&&Array.isArray(b.devices)&&b.devices.length<=10000,'数据包记录过多');assert(b.format!=='worktrace.bundle/1.1'||Array.isArray(b.files),'缺少文件版本');assert(!b.events.some(e=>e.event_type==='document.version')||b.format==='worktrace.bundle/1.1','文件证据需1.1数据包');return b;}

@@ -2,11 +2,15 @@
 
 所有路径为示例，先替换为公司实际目录、共享名、公司名和 IPv4。首次只选一两台员工电脑，验收后扩展。开发电脑仅执行隔离测试与发布，不初始化生产公司、不接管员工桌面。
 
+本页描述已有真实总控的联网部署。**暂时没有总控、数日后人工带回数据库时，直接按[独立离线分控](offline-collector.md)运行 v0.4.0 的 Initialize-OfflineNode.ps1。** 离线仍是 collector，不使用本页 hub 初始化或 Join；无需总控地址、登记密钥、证书或共享。首次保持记录和学习暂停，核对范围后启用。两种模式都不能通过拷贝他人的 data 获取身份。
+
 ## 1. 在指定总控电脑取源码和安装技能
 
-按 [下载与分发方法](download.md) 从公开的 [v0.3.0 Release](https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.3.0) 直接下载专用发布 ZIP 和 SHA256 校验文件，无需 Git、GitHub 账号或邀请；也可取得公司转发的同一原包。校验后解压到这台目标电脑的独立源码目录。示例源码目录为 `D:\WorkTraceSource`，应包含 `.worktrace-source.json`。不要用 GitHub 自动生成的 Source code ZIP 替代专用资产。
+按 [下载与分发方法](download.md) 从公开的 [v0.4.0 Release](https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.4.0) 直接下载专用发布 ZIP 和 SHA256 校验文件，无需 Git、GitHub 账号或邀请；也可取得公司转发的同一原包。校验后解压到这台目标电脑的独立源码目录。示例源码目录为 `D:\WorkTraceSource`，应包含 `.worktrace-source.json`。不要用 GitHub 自动生成的 Source code ZIP 替代专用资产。
 
 v0.3.0 新增外部来源事件规范 1.1，旧原生事件 1.0 仍可读取。涉及此类同步的总控和分控运行服务应一起升级；先备份完整 data，在独立目录验证。安装新 Skill 不会替换运行服务。旧 v0.2.1 发布及原校验值不变，升级细节见 [研究与优化报告](research-and-optimization.md)。
+
+v0.4.0 增加离线身份、本地日任务、文件保存版本 document.version 1.2 与加密交接。涉及新事件的接收端也须使用支持该规范的版本；不能把新的离线配置覆盖到旧联网目录。旧发布包及 SHA256 不改写。
 
 ```powershell
 Set-Location -LiteralPath 'D:\WorkTraceSource'

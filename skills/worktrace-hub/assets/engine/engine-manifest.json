@@ -1,6 +1,6 @@
 {
   "format": "worktrace.source/1.0",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "files": [
     {
       "path": "Install-Skills.ps1",
@@ -23,14 +23,19 @@
       "size": 1644
     },
     {
+      "path": "bridge/extract-document.ps1",
+      "sha256": "4f3fa6ac542095f955d7c6054cbf28f7511897146c9751def0c471578aad3620",
+      "size": 3287
+    },
+    {
       "path": "bridge/observe.ps1",
       "sha256": "2f4ae7863e43a2018a2d158c3cbdef9768f283c02a09488b56b81c21e600fb13",
       "size": 7980
     },
     {
       "path": "public/app.js",
-      "sha256": "8f0cb684de85f4d7af893460fefa67db516ea88f356a8aafe509b23405c8dd6f",
-      "size": 14589
+      "sha256": "3277fe9687bad94e0d3e502c28cfde108762984800b1f41547807618f442f376",
+      "size": 14958
     },
     {
       "path": "public/index.html",
@@ -58,14 +63,24 @@
       "size": 1864
     },
     {
+      "path": "scripts/Initialize-OfflineNode.ps1",
+      "sha256": "fb5fa287ce35a63d252dd0318c7bdc803607f37170cd6391936c9a99f4621595",
+      "size": 8059
+    },
+    {
       "path": "scripts/Join-Node.ps1",
       "sha256": "4242a3dedb5b0d8fc144f5aacc30af027de67bb8553c0262c16e4dc7a49f08a8",
       "size": 3430
     },
     {
+      "path": "scripts/Offline-Handoff.ps1",
+      "sha256": "35b39c90314b900f75f87d973dd04a7edc6bceeda5bb739cde90b73689435243",
+      "size": 2856
+    },
+    {
       "path": "scripts/provision-common.ps1",
-      "sha256": "083e269b5914d1b4f3d945e9b57b97382c142432855156f33e8ba292d0eccd5c",
-      "size": 1890
+      "sha256": "5a0f96c6290eabb4fd48a49022ab880f56d9e2d7873d4bc4e540c34a8fba8401",
+      "size": 2423
     },
     {
       "path": "scripts/skill-control.ps1",
@@ -74,8 +89,8 @@
     },
     {
       "path": "skills/worktrace-collector/SKILL.md",
-      "sha256": "e786e9bcc73c0910a096fcf915fad32828b21cfe78e6af9c792a7d154a6439e5",
-      "size": 3220
+      "sha256": "c9b2b1c10df611efe2c5bca66b847480e3566512f504a4cf0dd3ef015f75baee",
+      "size": 4926
     },
     {
       "path": "skills/worktrace-collector/agents/openai.yaml",
@@ -104,8 +119,8 @@
     },
     {
       "path": "skills/worktrace-personal/SKILL.md",
-      "sha256": "eb1f54ed50db7c2148a03921a58accb2b6633080cf69ac98c9637b8c123ff87a",
-      "size": 4073
+      "sha256": "849cc01047ea7e4a033c9e9494fc2adc37a440e88fa5828d56023782f9f3a3b0",
+      "size": 4626
     },
     {
       "path": "skills/worktrace-personal/agents/openai.yaml",
@@ -119,8 +134,8 @@
     },
     {
       "path": "src/admin-cli.mjs",
-      "sha256": "f57e8e5f9fd5d4fb0ae27924b86b5c524d66325ca517772480bd1cb5b8b10ff9",
-      "size": 3995
+      "sha256": "b03fd2b0c2d2df6e15155f96ff1ae16af79e72730508fce340c6932193a2f9d1",
+      "size": 4887
     },
     {
       "path": "src/analysis.mjs",
@@ -139,8 +154,8 @@
     },
     {
       "path": "src/collector.mjs",
-      "sha256": "cb658b3214ed636e54aad4eb90d2bdb7daa9a78cdce51fa077c6a135aac4b1fa",
-      "size": 6266
+      "sha256": "4789a763ffa5a9fe7a401b638de85156a3a6d592e511a1131ce496651298b26e",
+      "size": 6402
     },
     {
       "path": "src/external-records.mjs",
@@ -148,9 +163,19 @@
       "size": 12690
     },
     {
+      "path": "src/file-evidence.mjs",
+      "sha256": "50327a443a5935951c91ba0b927d93c418d92484fec9a88f64531da71a2bc605",
+      "size": 12459
+    },
+    {
+      "path": "src/handoff-cli.mjs",
+      "sha256": "8d9cd6c7972196df7258eee8a6ae3e18fa18b85c6998a35b8b90bd642b875936",
+      "size": 2123
+    },
+    {
       "path": "src/jobs.mjs",
-      "sha256": "f33bd1a70f696b32196da0a0b6371ada0bf583a971c9b208f0a09c40c2d74a47",
-      "size": 8008
+      "sha256": "7e80314d4da09298a499ece7879c381f901cdb82f8e6a8924d290e455dd986e1",
+      "size": 10258
     },
     {
       "path": "src/knowledge.mjs",
@@ -164,8 +189,8 @@
     },
     {
       "path": "src/learning.mjs",
-      "sha256": "0dfd79972bc15d500854a50623c737ec1015dabdafaa1329774e00da2ebeec0c",
-      "size": 13016
+      "sha256": "560615358eccc57a04986ee3673c7403babc212480f686f9e8ec57d0ed373f1c",
+      "size": 13392
     },
     {
       "path": "src/local-api.mjs",
@@ -179,13 +204,28 @@
     },
     {
       "path": "src/messages.mjs",
-      "sha256": "9c567a7940a416f389e30ba200a90836d581fcbadae77817fbd9e54871a13c02",
-      "size": 2466
+      "sha256": "c6ad2c16854a14de6f24082c0f5a030d7dc4024a49bf36ec3aa4c9f2337b04e0",
+      "size": 2601
+    },
+    {
+      "path": "src/offline-handoff.mjs",
+      "sha256": "0d5e7740090c5933f2f6091943013cb608f91a574414996684641ff3f4f3d8c0",
+      "size": 18414
+    },
+    {
+      "path": "src/offline-identity.mjs",
+      "sha256": "968e85091c02a82cb1a29026f06dad66f16d7b588502b8f2c4b233c8d40161f4",
+      "size": 2456
+    },
+    {
+      "path": "src/personal-digest.mjs",
+      "sha256": "e3cbb2386ba1c8056e6694cf72b22bbede878f0f5dff24a131fc1a7dcc0b6016",
+      "size": 3089
     },
     {
       "path": "src/protocol.mjs",
-      "sha256": "65643e3d844f1f445ad70a7689f4a346337fb0d33267d15bd517290c4fc4007c",
-      "size": 9995
+      "sha256": "37b2af197aa7ca684138818251ae5e6f8d5a61af2949cf1be45276dfd5bff001",
+      "size": 11581
     },
     {
       "path": "src/report.mjs",
@@ -194,23 +234,23 @@
     },
     {
       "path": "src/server.mjs",
-      "sha256": "0781708e8950fe743b2e66e72a7f94e0e5830461e218ad2aa492c3939cded6d5",
-      "size": 23009
+      "sha256": "5e6c9d84be58b6ac6a9819087b9905ab83e37ba363118577ae8295b89a7dd247",
+      "size": 28423
     },
     {
       "path": "src/store.mjs",
-      "sha256": "cd5c74a647059aacd9b190c63f955cd32de60384b950f293d5c5a198ab12babd",
-      "size": 10338
+      "sha256": "f46e786b4ee46414f71d3a9626fa0de2fcf2f56ece088a6cb2d9a77ae2dac5c0",
+      "size": 11750
     },
     {
       "path": "src/work.mjs",
-      "sha256": "6b134fa927be07c3878d14b558a751c3fb7d5b7f7e92c27afc1f87ac713459e2",
-      "size": 3470
+      "sha256": "ea099be5542d4e7bba1ba851b4bf37da2c02b5a9deccd5dd7bbff7eb953749dd",
+      "size": 3529
     },
     {
       "path": "src/worker.mjs",
-      "sha256": "0db6aa5e7e31b1a8f1e7a01317a2da4fed3962e312cf3e779531da805a2959dc",
-      "size": 12080
+      "sha256": "d2e93a7c175ff64e02a754053ade437f118cdf0d754e11a19a972ba823cccdc2",
+      "size": 20764
     },
     {
       "path": "设置登录启动.ps1",

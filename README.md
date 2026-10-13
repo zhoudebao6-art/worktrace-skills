@@ -6,7 +6,7 @@
 
 ## 其他电脑下载使用
 
-本仓库已公开，包含总控、分控采集、个人总结和证据四个技能及配套服务源码。其他电脑无需 GitHub 登录，直接从 [发布页](https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.3.0) 下载 `worktrace-skills-v0.3.0.zip` 和 `SHA256SUMS.txt`，核验后解压源码，例如到 `D:\WorkTraceSource`：
+本仓库已公开，包含总控、分控采集、个人总结和证据四个技能及配套服务源码。其他电脑无需 GitHub 登录，直接从 [发布页](https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.4.0) 下载 `worktrace-skills-v0.4.0.zip` 和 `SHA256SUMS.txt`，核验后解压源码，例如到 `D:\WorkTraceSource`：
 
 ```powershell
 Set-Location D:\WorkTraceSource
@@ -19,9 +19,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-SharedSkil
 
 这是源码分发，不是安装包；总控技能继续负责正式环境搭建。完整下载步骤见 [下载使用手册](docs/download.md)。也可以匿名克隆本仓库后安装。专用发布 ZIP 带有离线安装清单，GitHub 自动生成的 Source code ZIP 不能直接替代它。
 
-**让另一台电脑的 Codex 自己读取：** [化工案件员工独立离线分控完整指令](prompts/chemical-offline-collector.txt)（[纯文本地址](https://raw.githubusercontent.com/zhoudebao6-art/worktrace-skills/main/prompts/chemical-offline-collector.txt)）。指令要求目标电脑先补齐并验证离线首次建档、本地日总结和完整移交，再部署运行；**v0.3.0 尚不具备这些离线扩展的全部能力**。
+**让另一台电脑的 Codex 自己读取：** [化工案件员工独立离线分控完整指令](prompts/chemical-offline-collector.txt)（[纯文本地址](https://raw.githubusercontent.com/zhoudebao6-art/worktrace-skills/main/prompts/chemical-offline-collector.txt)）。v0.4.0 已包含无需总控的首次建档、本地有界学习、文档版本取证和完整加密移交；目标电脑直接部署发布版，无需现场开发。见 [离线分控操作手册](docs/offline-collector.md)。
 
-v0.3.0 增加 ActivityWatch/Screenpipe 导出适配、按员工设备分层检索、可追溯的候选离线验收。详见 [六项目研究与优化报告](docs/research-and-optimization.md) 和 [本版验证记录](docs/validation-v0.3.md)。旧 v0.2.1 发布保持不变；公开仓库只保存通用源码、说明和合成测试，不保存公司工作数据。
+v0.4.0 离线分控改进及实测范围见 [验证报告](docs/validation-v0.4.md)。历史 v0.3.0 增加 ActivityWatch/Screenpipe 导出适配、按员工设备分层检索、可追溯的候选离线验收。详见 [六项目研究与优化报告](docs/research-and-optimization.md) 和 [本版验证记录](docs/validation-v0.3.md)。旧 v0.2.1 发布保持不变；公开仓库只保存通用源码、说明和合成测试，不保存公司工作数据。
 
 ## 为什么这样做
 
@@ -36,6 +36,8 @@ v0.3.0 增加 ActivityWatch/Screenpipe 导出适配、按员工设备分层检�
 这适合先做客服流程学习和草稿协作。**不能承诺一天监控就学会岗位，也不是控制所有软件的通用自动化工具。** 专有控件可能不提供 UIA 正文；密码框/编辑框跳过，截图只在明确配置且控件树可处理时启用。当前不录键盘、剪贴板、麦克风，不解析语音，不自动回复微信，不连接尚未提供的案件系统。
 
 ## 总步骤
+
+**总控尚未上线或跨局域网时**：直接按 [离线分控手册](docs/offline-collector.md) 在员工电脑部署，数日后带回加密完整移交包。第一次建总控时明确接纳包内公司/设备编号；不同公司编号不得静默合并。以下为联网部署步骤。
 
 1. **选真实总控与试点员工**：先 1–2 人。总控和员工需能相互访问目标 LAN 的 HTTPS/共享路径；开发机可处于不同网络。跨 LAN 不自动发现或穿透，须公司已有路由/VPN。每人固定一台电脑、一个明确员工编号。
 2. **在真实总控下载仓库并安装总控 Skill**：按 [完整部署方法](docs/deployment.md) 复制 `skills/worktrace-hub` 到其 `.agents/skills`，然后在那台电脑的 Codex 中调用。不要把本仓库目录当作公司数据库目录。

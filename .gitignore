@@ -30,3 +30,7 @@ work/
 **/.worktrace-install-backup*/
 **/.worktrace-backups/
 .worktrace-source.json
+
+*.wthandoff
+**/offline-identity.json
+**/handoff-manifest.json
