@@ -1,5 +1,6 @@
 ﻿$ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
+$packageVersion=(Get-Content -LiteralPath (Join-Path $root 'package.json') -Raw -Encoding UTF8|ConvertFrom-Json).version
 $env:TEMP='D:\codex+\temp';$env:TMP=$env:TEMP;$env:TMPDIR=$env:TEMP;$env:NODE_COMPILE_CACHE='D:\codex+\cache\worktrace\node';$env:WORKTRACE_PORT='0'
 $run=Join-Path $env:TEMP ('worktrace-offline-provision\'+[guid]::NewGuid().ToString('N'))
 $package=Join-Path $run 'synthetic-download';$engine=Join-Path $package 'skills\worktrace-hub\assets\engine';$nodeRoot=Join-Path $run 'employee';$skills=Join-Path $run 'employee-skills'
@@ -29,10 +30,10 @@ try{
  foreach($relative in @('src','bridge','public','skills\worktrace-collector','skills\worktrace-personal','skills\worktrace-evidence')){$files+=@(Get-ChildItem -LiteralPath (Join-Path $root $relative) -File -Recurse)}
  foreach($relative in @('Start.ps1','Tray.ps1','Install-Skills.ps1','连接Codex.ps1','设置登录启动.ps1','runtime\NODE-LICENSE.txt','scripts\provision-common.ps1','scripts\Ensure-Runtime.ps1','scripts\Configure-Learning.ps1','scripts\Join-Node.ps1','scripts\Initialize-OfflineNode.ps1','scripts\skill-control.ps1')){$files+=Get-Item -LiteralPath (Join-Path $root $relative)}
  $entries=@();foreach($file in $files){$rel=$file.FullName.Substring($root.Length+1).Replace('\','/');$dest=Join-Path $engine $rel;New-Item -ItemType Directory -Path (Split-Path $dest -Parent) -Force|Out-Null;Copy-Item -LiteralPath $file.FullName -Destination $dest;$entries+=@{path=$rel;sha256=(Get-WorkTraceHash $dest);size=$file.Length}}
- Save-Json (Join-Path $engine 'engine-manifest.json') @{format='worktrace.source/1.0';version='0.4.0';files=$entries}
+ Save-Json (Join-Path $engine 'engine-manifest.json') @{format='worktrace.source/1.0';version=$packageVersion;files=$entries}
  foreach($script in @('Initialize-OfflineNode.ps1','provision-common.ps1')){Copy-Item -LiteralPath (Join-Path $root ('scripts\'+$script)) -Destination (Join-Path $package ('scripts\'+$script))}
  $downloadFiles=@();foreach($file in Get-ChildItem -LiteralPath $package -File -Recurse){$downloadFiles+=@{path=$file.FullName.Substring($package.Length+1).Replace('\','/');sha256=(Get-WorkTraceHash $file.FullName);size=$file.Length}}
- Save-Json (Join-Path $package '.worktrace-source.json') @{format='worktrace.download/1.0';repository='https://github.com/zhoudebao6-art/worktrace-skills';commit=('0'*40);version='0.4.0';files=$downloadFiles}
+ Save-Json (Join-Path $package '.worktrace-source.json') @{format='worktrace.download/1.0';repository='https://github.com/zhoudebao6-art/worktrace-skills';commit=('0'*40);version=$packageVersion;files=$downloadFiles}
  & (Join-Path $root 'scripts\Ensure-Runtime.ps1') -Root $package -Candidate (Join-Path $root 'runtime\node.exe')|Out-Null
  $identity=@{format='worktrace.offline-identity/1.0';org_name='OFFLINE SYNTHETIC TEST';employee_id='OFFLINE_TEST';employee_name='SYNTHETIC EMPLOYEE';label='SYNTHETIC PC'}
  $identityFile=Join-Path $run 'identity.json';Save-Json $identityFile $identity
@@ -44,7 +45,9 @@ try{
  foreach($name in @('hub_url','device_token','ca_pem','cert_password','hub_port')){if($config.$name){throw "Unexpected hub configuration: $name"}}
  if(@(Get-ChildItem -LiteralPath (Join-Path $nodeRoot 'data') -File|Where-Object {$_.Extension -in @('.pem','.pfx')}).Count){throw 'Offline deployment generated certificates'}
  if($first.sync.running -or $first.sync.last_success -or $first.sync.error){throw 'Offline deployment attempted remote synchronization'}
- foreach($name in @('worktrace-collector','worktrace-personal','worktrace-evidence')){$b=Get-Content -LiteralPath (Join-Path $skills ($name+'\deployment.json')) -Raw|ConvertFrom-Json;if($b.root -ne $nodeRoot -or $b.role -ne 'collector'){throw 'Skill bound to wrong deployment'}}
+ $deployedVersion=(Get-Content -LiteralPath (Join-Path $nodeRoot 'engine-manifest.json') -Raw -Encoding UTF8|ConvertFrom-Json).version
+ if(!$packageVersion -or $deployedVersion -ne $packageVersion){throw 'Offline deployment manifest version does not match package version'}
+ foreach($name in @('worktrace-collector','worktrace-personal','worktrace-evidence')){$b=Get-Content -LiteralPath (Join-Path $skills ($name+'\deployment.json')) -Raw|ConvertFrom-Json;if($b.root -ne $nodeRoot -or $b.role -ne 'collector'){throw 'Skill bound to wrong deployment'};if($b.version -ne $deployedVersion){throw "Skill deployment version does not match manifest/package: $name"}}
  $dbBefore=Read-DatabaseIdentity;$configHash=Get-WorkTraceHash $configFile
  & $initializer @arguments|Out-Null
  $identity.org_id=$config.org_id;Save-Json $identityFile $identity
@@ -85,6 +88,7 @@ try{
  $deadline=[datetime]::UtcNow.AddSeconds(30)
  do{$left=@($owned|Where-Object {Get-Process -Id $_ -ErrorAction SilentlyContinue});if(!$left.Count){break};Start-Sleep -Milliseconds 300}while([datetime]::UtcNow -lt $deadline)
  $report=@{passed=($passed -and !$left.Count);failure=$failure;test_directory=$run;git_free_fixture=$true;offline_without_hub=$passed;repeat_preserves_identity_and_pause=$passed;conflict_and_tamper_rejected=$passed;three_skills_bound=$passed;handoff_secure_utf8_stdin_and_input_alias=$passed;desktop_capture_never_enabled=$true;real_model_not_called=$true;mcp_registration_skipped=$true;all_test_processes_stopped=(!$left.Count)}
+ $report.deployment_bindings_match_manifest_and_package_version=$passed
  Save-Json (Join-Path $run 'offline-provision-report.json') $report
  $report|ConvertTo-Json
  if(!$report.passed){throw 'Offline provisioning verification failed'}

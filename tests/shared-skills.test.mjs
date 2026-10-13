@@ -114,10 +114,18 @@ test('共享技能：旧版删除文件已备份，篡改收据相对路径不�
 
 test('共享技能：分控先拉取技能后接入部署，更新保留三项真实绑定',psOptions,t=>{
  const f=fixture(t);let r=f.run('collector');assert.equal(r.code,0,r.text);
- r=command('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',join(f.repo,'Install-Skills.ps1'),'-Role','collector','-SkillsDirectory',f.skills,'-SkipMcp'],f.repo);assert.equal(r.code,0,r.text);
+ const sourceVersion=json(join(f.repo,'skills','worktrace-hub','assets','engine','engine-manifest.json')).version;
+ const bind=()=>command('powershell.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',join(f.repo,'Install-Skills.ps1'),'-Role','collector','-SkillsDirectory',f.skills,'-SkipMcp'],f.repo);
+ r=bind();assert.equal(r.code,0,r.text);
+ for(const name of ['worktrace-collector','worktrace-evidence','worktrace-personal'])assert.equal(json(join(f.skills,name,'deployment.json')).version,sourceVersion);
+ // Both stale and absent legacy versions must be repaired for matching
+ // bindings, while the source receipt and installed skill content stay valid.
+ const stalePath=join(f.skills,'worktrace-collector','deployment.json'),stale=json(stalePath);writeFileSync(stalePath,JSON.stringify({...stale,version:'0.0.0'}));
+ const missingPath=join(f.skills,'worktrace-evidence','deployment.json'),missing=json(missingPath);delete missing.version;writeFileSync(missingPath,JSON.stringify(missing));
+ r=bind();assert.equal(r.code,0,r.text);
  const bindings={};
  for(const name of ['worktrace-collector','worktrace-evidence','worktrace-personal']){
-  const path=join(f.skills,name,'deployment.json');assert.equal(json(path).root,f.repo);assert.equal(json(path).role,'collector');bindings[name]=readFileSync(path,'utf8');
+  const path=join(f.skills,name,'deployment.json');assert.equal(json(path).root,f.repo);assert.equal(json(path).role,'collector');assert.equal(json(path).version,sourceVersion);bindings[name]=readFileSync(path,'utf8');
  }
  const personal=join(f.repo,'skills','worktrace-personal','SKILL.md');writeFileSync(personal,readFileSync(personal,'utf8')+'\nreviewed new version\n');f.commit();r=f.run('collector',['-Update']);assert.equal(r.code,0,r.text);
  for(const [name,binding]of Object.entries(bindings))assert.equal(readFileSync(join(f.skills,name,'deployment.json'),'utf8'),binding);

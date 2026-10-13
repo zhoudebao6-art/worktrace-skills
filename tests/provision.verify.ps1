@@ -1,13 +1,20 @@
 ﻿$ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
+$packageVersion=(Get-Content -LiteralPath (Join-Path $root 'package.json') -Raw -Encoding UTF8|ConvertFrom-Json).version
 $work='D:\codex+\temp\worktrace-provision'
 $run=Join-Path $work ([guid]::NewGuid().ToString('N'));New-Item -ItemType Directory -Path $run -Force|Out-Null
 $env:TEMP='D:\codex+\temp';$env:TMP=$env:TEMP;$env:TMPDIR=$env:TEMP;$env:WORKTRACE_PORT='0'
 $skill=Join-Path $run 'portable-hub-skill';Copy-Item -LiteralPath (Join-Path $root 'skills\worktrace-hub') -Destination $skill -Recurse
 $h=Join-Path $run 'hub';$nodes=@($h);$passed=$false;$failure=''
 function Invoke-Local([string]$NodeRoot,[string]$Path,$Body=$null){$r=Get-Content -LiteralPath (Join-Path $NodeRoot 'data\running.json') -Raw|ConvertFrom-Json;$headers=@{Authorization='Bearer '+($r.url -split '#key=')[1]};$url='http://127.0.0.1:'+$r.port+'/api/'+$Path;if($null -eq $Body){Invoke-RestMethod $url -Headers $headers -TimeoutSec 20}else{Invoke-RestMethod $url -Headers $headers -Method Post -ContentType 'application/json; charset=utf-8' -Body ([Text.Encoding]::UTF8.GetBytes(($Body|ConvertTo-Json -Depth 10 -Compress))) -TimeoutSec 40}}
+function Assert-BindingVersion([string]$NodeRoot,[string[]]$BindingFiles){
+ $deployedVersion=(Get-Content -LiteralPath (Join-Path $NodeRoot 'engine-manifest.json') -Raw -Encoding UTF8|ConvertFrom-Json).version
+ if(!$packageVersion -or $deployedVersion -ne $packageVersion){throw "Deployment manifest version does not match package version: $NodeRoot"}
+ foreach($file in $BindingFiles){$binding=Get-Content -LiteralPath $file -Raw -Encoding UTF8|ConvertFrom-Json;if($binding.version -ne $deployedVersion){throw "Skill deployment version does not match manifest/package: $file"}}
+}
 try{
  & (Join-Path $skill 'scripts\bootstrap.ps1') -WorkDir $h -SkipMcp|Out-Null
+ Assert-BindingVersion $h @((Join-Path $skill 'deployment.json'))
  $s=Invoke-Local $h 'status';if($s.configured){throw 'Unexpected configured company'}
  $listener=[Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback,0);$listener.Start();$port=$listener.LocalEndpoint.Port;$listener.Stop()
  Invoke-Local $h 'setup' @{role='hub';org_name='PROVISION TEST ONLY';address='127.0.0.1';hub_port=$port}|Out-Null
@@ -20,6 +27,8 @@ try{
  $before=Invoke-Local $h 'status';if(@($before.devices).Count -ne 2){throw 'Repeated provisioning duplicated devices'}
  for($i=1;$i -le 2;$i++){
   & (Join-Path $share 'scripts\Join-Node.ps1') -Settings (Join-Path $roster[$i-1].drop_path 'join.json') -SkillsDirectory (Join-Path $run ('employee-skills'+$i)) -SkipMcp|Out-Null
+  $bindingFiles=@('worktrace-collector','worktrace-personal','worktrace-evidence')|ForEach-Object {Join-Path (Join-Path $run ('employee-skills'+$i)) ($_+'\deployment.json')}
+  Assert-BindingVersion $roster[$i-1].work_dir $bindingFiles
   $s=Invoke-Local $roster[$i-1].work_dir 'status';if($s.employee_id -ne ('TEST'+$i) -or $s.collection.enabled -ne ($i -eq 1)){throw 'Wrong identity or unexpected capture'}
   $learning=Join-Path $roster[$i-1].work_dir 'scripts\Configure-Learning.ps1'
   & $learning -DataDir (Join-Path $roster[$i-1].work_dir 'data') -Action Enable | Out-Null
@@ -47,6 +56,7 @@ try{
  $report.repeated_join_preserves_manual_pause=$passed
  $report.learning_config_script_role_model_and_pause=$passed
  $report.runtime_not_required_in_git=$passed
+ $report.deployment_bindings_match_manifest_and_package_version=$passed
  $report|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $root '总控部署验证.json') -Encoding UTF8
  $report|ConvertTo-Json
  if(!$report.passed){throw 'Provisioning verification failed'}

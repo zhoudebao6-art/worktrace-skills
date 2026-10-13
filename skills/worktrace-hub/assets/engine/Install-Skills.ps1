@@ -20,6 +20,10 @@ function Test-SharedSkillSource([string]$Source,[string]$Destination,[string]$Na
  }
  return $true
 }
+$versionFile=Join-Path $PSScriptRoot 'engine-manifest.json'
+if(!(Test-Path -LiteralPath $versionFile)){$versionFile=Join-Path $PSScriptRoot 'skills\worktrace-hub\assets\engine\engine-manifest.json'}
+$sourceVersion=(Get-Content -LiteralPath $versionFile -Raw -Encoding UTF8|ConvertFrom-Json).version
+if($sourceVersion -notmatch '^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$'){throw '无法确定经过校验的部署源码版本。'}
 if(!$SkillsDirectory){$SkillsDirectory=Join-Path ([Environment]::GetFolderPath('UserProfile')) '.agents\skills'}
 $destRoot=[IO.Path]::GetFullPath($SkillsDirectory)
 New-Item -ItemType Directory -Path $destRoot -Force|Out-Null
@@ -30,14 +34,15 @@ foreach($name in $names){
   $bindingPath=Join-Path $dest 'deployment.json'
   if(!(Test-Path -LiteralPath $bindingPath)){
    if(!(Test-SharedSkillSource $source $dest $name $Role)){throw "已有同名技能 $dest，未覆盖。"}
-   @{root=$PSScriptRoot;role=$Role;version='0.2.1'}|ConvertTo-Json|Set-Content -LiteralPath $bindingPath -Encoding UTF8
+   @{root=$PSScriptRoot;role=$Role;version=$sourceVersion}|ConvertTo-Json|Set-Content -LiteralPath $bindingPath -Encoding UTF8
   }
   $old=Get-Content -LiteralPath $bindingPath -Raw -Encoding UTF8|ConvertFrom-Json
   if($old.root -ne $PSScriptRoot -or $old.role -ne $Role){throw "已有不同来源技能 $dest，未覆盖。"}
   foreach($file in Get-ChildItem -LiteralPath $source -File -Recurse){$rel=$file.FullName.Substring($source.Length+1);$target=Join-Path $dest $rel;if(!(Test-Path -LiteralPath $target) -or (Get-SkillHash $file.FullName) -ne (Get-SkillHash $target)){throw "技能内容已有差异，请保留原版后另行升级：$dest"}}
+  if($old.version -ne $sourceVersion){$old|Add-Member -NotePropertyName version -NotePropertyValue $sourceVersion -Force;$old|ConvertTo-Json|Set-Content -LiteralPath $bindingPath -Encoding UTF8}
  }else{
   Copy-Item -LiteralPath $source -Destination $dest -Recurse
-  @{root=$PSScriptRoot;role=$Role;version='0.2.1'}|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $dest 'deployment.json') -Encoding UTF8
+  @{root=$PSScriptRoot;role=$Role;version=$sourceVersion}|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $dest 'deployment.json') -Encoding UTF8
  }
  Write-Output "Skill installed: $dest"
 }
