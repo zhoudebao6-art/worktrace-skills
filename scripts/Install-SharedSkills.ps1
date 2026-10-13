@@ -53,13 +53,34 @@ function Get-Inventory([string]$Root){
  }
  return $result
 }
-function Assert-SourceFile([string]$Path){
+function Assert-NoAccessCredential([string]$FullPath,[string]$DisplayPath){
+ $text=[IO.File]::ReadAllText($FullPath)
+ if($text -notmatch '^\s*[\{\[]'){return}
+ $found=$text -cmatch '"(?:invite_token|request_secret|device_token)"\s*:\s*"[A-Za-z0-9_-]{43}"'
+ if(!$found){
+  try{$value=$text|ConvertFrom-Json}catch{return}
+  $pending=New-Object 'Collections.Generic.Stack[object]';$pending.Push($value)
+  while($pending.Count -and !$found){
+   $item=$pending.Pop();if($null -eq $item){continue}
+   if($item -is [Array]){foreach($child in $item){$pending.Push($child)};continue}
+   if($item -isnot [PSCustomObject]){continue}
+   foreach($property in $item.PSObject.Properties){
+    if($property.Name -cin @('invite_token','request_secret','device_token') -and $property.Value -is [string] -and $property.Value -cmatch '^[A-Za-z0-9_-]{43}$'){$found=$true;break}
+    if($null -ne $property.Value -and ($property.Value -is [PSCustomObject] -or $property.Value -is [Array])){$pending.Push($property.Value)}
+   }
+  }
+ }
+ if($found){throw "技能源包含私人接入码、接入请求或登记凭据，未复制（未显示密钥）：$DisplayPath"}
+}
+function Assert-SourceFile([string]$Path,[string]$BaseDirectory=$sourceRoot){
  $parts=$Path.Split('/');$leaf=$parts[-1]
- if($parts -contains 'data' -or $parts -contains '.git' -or $parts -contains 'node_modules' -or $parts -contains '__pycache__' -or
-    $leaf -in @('node.exe','deployment.json','config.json','running.json','enrollment.json','credentials.json','.worktrace-install.json') -or
-    $leaf -match '(^\.env($|\.)|\.(sqlite.*|db|pem|pfx|key|wpack|enroll\.json)$)'){
+ if($parts -contains 'data' -or $parts -contains 'self-enrollment' -or $parts -contains 'lan-enrollment' -or $parts -contains 'self-lan-enrollment' -or $parts -contains '.git' -or $parts -contains 'node_modules' -or $parts -contains '__pycache__' -or
+    $leaf -in @('node.exe','deployment.json','config.json','running.json','enrollment.json','credentials.json','.worktrace-install.json','invite.json','invitation.json','request.json','join-request.json','join-state.json') -or
+    $leaf -match '(^\.env($|\.)|\.(sqlite.*|db|pem|pfx|key|wpack|enroll\.json|invite\.json|invitation\.json|request\.json|join-state\.json)$)' -or
+    $leaf -match '(^|\.)(enrollment|request|invite|invitation|join-request|join-state)\.json\..+\.tmp$'){
   throw "技能源包含运行数据、凭据或运行时二进制，未复制：$Path"
  }
+ Assert-NoAccessCredential (Join-Path $BaseDirectory $Path) $Path
 }
 function Assert-EqualInventory($Expected,$Actual,[string]$Label){
  if($Expected.Count -ne $Actual.Count){throw "$Label 文件数不一致。"}
@@ -141,7 +162,7 @@ foreach($name in $names){
  $source=Join-Path $sourceRoot ('skills/'+$name);$dest=Join-Path $destRoot $name
  $files=Get-Inventory $source
  if(!$files.ContainsKey('SKILL.md')){throw "技能源缺少 SKILL.md：$name"}
- foreach($key in $files.Keys){Assert-SourceFile $key}
+ foreach($key in $files.Keys){Assert-SourceFile $key $source}
  if($gitMode){
   $tracked=@(Invoke-Git @('ls-files','--',('skills/'+$name+'/')))
   $trackedFiles=@{}

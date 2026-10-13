@@ -1,0 +1,20 @@
+请在这台 Windows 员工电脑上搭建 WorkTrace 分控环境，并在同一局域网内自动连接我提供的公司连接链接对应的总控。
+
+一、链接和来源
+使用我在对话中提供的完整 GitHub 公司连接链接，必须保留 #worktrace-join=v1. 后的全部片段。它包含公司名称、公司编号、总控 HTTPS 地址和公开证书，不包含设备密钥。普通仓库地址不能确定公司目标；若只有普通网址，先取得总控生成的完整链接，不扫描局域网猜总控。
+读取 https://github.com/zhoudebao6-art/worktrace-skills/blob/main/docs/download.md 和 https://github.com/zhoudebao6-art/worktrace-skills/blob/main/docs/lan-join.md 。使用本机 Git 或实际发现且 --version 验证可用的 Codex 自带 git.exe，匿名 clone main 到本机新的独立源码目录，并设置 WORKTRACE_GIT 为实际路径。记录来源和 commit，核对工作树干净，读取 AGENTS.md。无需 GitHub 登录或仓库写权限。
+旧 v0.4.1 Release 不包含链接自动接入或当前 xhigh 修订；不要下载旧包冒充新功能，不假定新 Release 资产存在，不伪造 .worktrace-source.json，不要求现场重新编写采集服务。
+
+二、身份和已有部署
+这台电脑为 role=collector；不要初始化总控。优先检查已有部署和身份。首次请收集公司真实唯一员工编号、真实姓名，电脑名称用实际值；缺少真实字段时问我，不用 TEST/默认编号或借用他人身份。已有离线分控、其他公司或不同员工的数据不覆盖，不复制别人 data 或 Codex 登录凭据。
+源码与运行目录分开，使用本机长期目录。有 D 盘时缓存遵守 AGENTS.md 的 D:\codex+\temp 与 D:\codex+\cache；没有 D 盘时采用运行目录下 runtime-temp/runtime-cache。总控已经启用允许的实际 LAN 网段时无需邀请码、私有登记文件或逐台总控确认。
+
+三、正式自动接入
+从已核验完整源码执行 scripts/Join-Lan.ps1，参数为 -ConnectionLink <完整公司链接> -WorkDir <本机长期目录> -EmployeeId <真实员工编号> -EmployeeName <真实姓名> -ComputerLabel <实际电脑名称>。脚本准备经过固定 SHA256 校验的 Node、本机服务、三个分控技能、MCP、独立设备身份和总控心跳。保持 HTTPS 证书与地址验证，不使用跳过 TLS 的参数，不向总控索取管理令牌。
+每台电脑自行生成设备秘密。保留 WorkDir\setup\lan-enrollment 全部状态，不输出 request.json/enrollment.json 的秘密，不提交源码。网络失败后使用原链接、身份、目录及原参数重试，不删除状态或改编号反复登记。
+首次采集和自动学习默认关闭。若我或公司既定部署要求已经明确记录范围和启用状态，直接按授权配置并验收；否则完成连接后报告实际暂停状态。要求当前用户登录启动时加 -EnableLogonStartup，已授权开始记录时才加 -StartCapture。保持可见托盘和暂停入口，不操作微信发消息、不录键盘/剪贴板/麦克风、不修改员工工作原件。
+
+四、模型与验收
+核验实际执行器 gpt-6.1-sol / xhigh（极高），不以当前聊天显示的模型替代服务配置。自动学习需本机 Codex 已登录及相应模型权限，未配置/未运行则明确报告。用状态和同步回执确认真实 org_id/employee_id/device_id、MCP 路径、总控心跳，不将普通网页可打开当作连接成功。
+连接、真实采样和个人学习分别验收。连接完成不表示已采集工作内容；只有授权启用后的真实样本和引用原始证据的个人总结确实保存/同步，才能报告对应环节完成。已有数据或身份冲突时保留原状、说明具体原因，不关闭校验绕过。
+最后简要给出实际身份、源码/运行目录、服务和登录启动状态、角色模型、总控心跳、记录与学习是否开启，以及仍未验证的项目。请现在完成可以独立执行的下载、核验和环境准备，再收集确实缺少的真实身份信息。

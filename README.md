@@ -2,26 +2,29 @@
 
 用于已告知员工的 Windows 固定工作电脑：记录工作证据，由分控 Codex 整理个人操作方法，汇入指定总控电脑的统一数据库，由总控逐步完善岗位 Skill 和有界 Loop。
 
-**开发电脑不是总控。总控是另一台指定设备；以下生产部署步骤在那台电脑执行。** 不需要开发电脑在线，不制作安装包。总控 Skill 按校验清单准备源码和固定 Node 运行时，再为员工准备专属接入入口。
+**只有用户指定的电脑承担总控；读取源码不会指定本机角色。** 总控 Skill 按校验清单准备源码和固定 Node 运行时，再为员工准备接入入口。
 
 ## 其他电脑下载使用
 
-本仓库已公开，包含总控、分控采集、个人总结和证据四个技能及配套服务源码。其他电脑无需 GitHub 登录，直接从 [发布页](https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.4.1) 下载 `worktrace-skills-v0.4.1.zip` 和 `SHA256SUMS.txt`，核验后解压源码，例如到 `D:\WorkTraceSource`：
+本仓库已公开，包含总控、分控采集、个人总结和证据四个技能及配套服务源码。当前局域网链接自动接入使用完整 `main` 源码，无需 GitHub 登录：
 
 ```powershell
-Set-Location D:\WorkTraceSource
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-SharedSkills.ps1 -Role hub
+git clone --branch main --single-branch https://github.com/zhoudebao6-art/worktrace-skills.git D:\WorkTraceSource-main
 ```
 
-`-Role hub` 只安装总控技能；员工电脑改为 `-Role collector`，安装分控、个人学习和证据技能。安装不指定生产角色、不启动服务或采集。下一轮 Codex 对话可发现新技能；生产初始化继续按下文进行。
+使用本机 Git 或已核验的 Codex 自带 Git，路径可通过 `WORKTRACE_GIT` 提供；先阅读 [下载使用手册](docs/download.md) 核验来源、commit 与干净工作树。历史 [v0.4.1 Release](https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.4.1) 不包含此次 LAN 链接接入及模型配置，保留供旧版使用，不用旧包替代当前源码。
 
-后续将新版源码解压到新目录，再运行相同脚本并加 `-Update`。脚本保留部署绑定并检查本地修改，更新前备份；已有不同来源技能不会强行覆盖。已部署服务需另按升级流程处理。
+**同一局域网直接接入：** 总控按 [局域网接入手册](docs/lan-join.md) 启用实际网段并生成公司连接链接。员工把整个链接交给自己电脑的 Codex，使用真实员工编号和姓名，Codex 从当前源码运行 `scripts/Join-Lan.ps1`，完成运行时、本机服务、三个分控技能、MCP 与总控心跳。无需逐台总控确认、邀请码或私有接入文件。普通仓库地址没有公司目标，不能代替含 `#worktrace-join=v1.` 片段的公司连接链接。
 
-这是源码分发，不是安装包；总控技能继续负责正式环境搭建。完整下载步骤见 [下载使用手册](docs/download.md)。也可以匿名克隆本仓库后安装。专用发布 ZIP 带有离线安装清单，GitHub 自动生成的 Source code ZIP 不能直接替代它。
+可直接给员工 Codex 读取 [局域网分控完整指令](prompts/lan-collector.txt)（[纯文本地址](https://raw.githubusercontent.com/zhoudebao6-art/worktrace-skills/main/prompts/lan-collector.txt)）。公司链接只含地址、公司信息和公开证书，不含设备秘密；每台分控独立生成密钥。首次记录与自动学习默认关闭，已有离线或不同身份数据不覆盖。管理员手工登记与一次性邀请码方式仍保留。
+
+只安装技能时运行 `scripts/Install-SharedSkills.ps1 -Role collector`，总控使用 `-Role hub`；更新追加 `-Update`。脚本核验并备份旧版、保留部署绑定，不强行覆盖来源不明或本地修改的技能。技能安装不启动采集，也不会升级已绑定的运行服务。完整流程见 [下载使用手册](docs/download.md)。
 
 **让另一台电脑的 Codex 自己读取：** [化工案件员工独立离线分控完整指令](prompts/chemical-offline-collector.txt)（[纯文本地址](https://raw.githubusercontent.com/zhoudebao6-art/worktrace-skills/main/prompts/chemical-offline-collector.txt)）。v0.4.1 已包含无需总控的首次建档、本地有界学习、文档版本取证和完整加密移交；目标电脑直接部署发布版，无需现场开发。见 [离线分控操作手册](docs/offline-collector.md)。
 
 v0.4.1 优化白天记录时的文件读取、托盘轮询和界面采集负载。已有员工分控按[性能诊断与升级说明](docs/collector-performance.md)及[升级指令](prompts/upgrade-collector-performance.txt)更新实际运行服务；只更新 Skill 不会使旧服务获得优化。离线能力的原验证记录见 [v0.4.0 报告](docs/validation-v0.4.md)。历史 v0.3.0 的六项目研究与优化见 [研究报告](docs/research-and-optimization.md)。旧发布保留；公开仓库只保存通用源码、说明和合成测试，不保存公司工作数据。
+
+当前源码将总控和分控的推理强度统一设为 `xhigh`（极高），分别使用 `gpt-6-astra` 和 `gpt-6.1-sol`。历史 Release 不会自动取得新功能；已有部署须升级实际服务并复验。
 
 ## 为什么这样做
 
@@ -41,11 +44,11 @@ v0.4.1 优化白天记录时的文件读取、托盘轮询和界面采集负载�
 
 1. **选真实总控与试点员工**：先 1–2 人。总控和员工需能相互访问目标 LAN 的 HTTPS/共享路径；开发机可处于不同网络。跨 LAN 不自动发现或穿透，须公司已有路由/VPN。每人固定一台电脑、一个明确员工编号。
 2. **在真实总控下载仓库并安装总控 Skill**：按 [完整部署方法](docs/deployment.md) 复制 `skills/worktrace-hub` 到其 `.agents/skills`，然后在那台电脑的 Codex 中调用。不要把本仓库目录当作公司数据库目录。
-3. **总控准备环境与员工入口**：bootstrap 配置实际公司/LAN 地址；prepare-fleet 为各员工准备独立登记文件和接入脚本。公共源码共享与每人私有接入目录分开。
-4. **员工首次接入**：在该员工已登录的桌面内，让其 Codex 运行专属 Join-WorkTrace.ps1。自动配置本地服务、分控/个人学习/证据 Skill 和 MCP。没有既有远程执行权限时，这次本机触发仍必需。
+3. **总控准备环境与员工入口**：bootstrap 配置实际公司/LAN 地址；选择同网自动登记时，启用真实网段并生成公司连接链接。需要管理员预登记时仍可使用 prepare-fleet，公共源码与私有登记材料分开。
+4. **员工首次接入**：在该员工已登录桌面内，让其 Codex 持完整公司连接链接运行 `Join-Lan.ps1`，或使用已有专属 `Join-WorkTrace.ps1`。自动配置本地服务、分控/个人学习/证据 Skill 和 MCP。首次本机执行由员工电脑上的 Codex 完成，不需要总控接管桌面。
 5. **验收采集与同步**：确认员工编号、设备编号、真实活动样本、暂停和断线补传。默认仅应用元数据，学习正文前需针对公司实际软件配置并实测。
 6. **验收个人总结**：运行 `$worktrace-personal`，核对操作、判断、检查、结果、人工修改、未知项及引用；确认 `learning.summary` 真正到达总控。只见元数据时应得到“证据不足”，不是虚构方法。
-7. **启用夜间队列与自动学习**：按 [夜间循环手册](docs/nightly-loop.md)，在真实分控启用本机执行器，在真实总控启用 AutoDispatch。总控 Astra/high、分控 6.1 Sol/high；双向消息、持久化任务与回执使用已有 HTTPS 同步。不需要保持聊天常开，尚未启用时可手动调用技能。
+7. **启用夜间队列与自动学习**：按 [夜间循环手册](docs/nightly-loop.md)，在真实分控启用本机执行器，在真实总控启用 AutoDispatch。总控 Astra/xhigh、分控 6.1 Sol/xhigh；双向消息、持久化任务与回执使用已有 HTTPS 同步。不需要保持聊天常开，尚未启用时可手动调用技能。
 8. **总控完善 Loop 与候选 Skill**：按 [学习循环](skills/worktrace-hub/references/learning-loop.md) 核验、比较、补证、留出案例回放。验证后再决定业务自动化权限与接口；保持原始证据和候选版本可追溯。
 
 ## 交付内容
@@ -61,4 +64,4 @@ v0.4.1 优化白天记录时的文件读取、托盘轮询和界面采集负载�
 
 运行环境：Windows x64，Windows PowerShell 5.1/.NET 4.7.2+，员工桌面已登录；Codex 已安装/登录且 CLI 可用。固定 Node v22.23.2 首次由脚本从 [Node 官方分发](https://nodejs.org/en/download/archive/v22.23.2) 获取并按固定 SHA256 校验，总控准备一份后共享给员工，不要求每台自行下载或装 Node/Python。运行服务无 npm 依赖。运行时固定版本应由维护者评估升级并复验，不自动漂移。
 
-技能、MCP 与 Codex 的关系可参考 [OpenAI 技能说明](https://developers.openai.com/plugins/concepts/skills) 和 [MCP 文档](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)。本项目不会拷贝员工 Codex 登录信息。账号和额度使用各电脑本机登录；自动学习按角色固定模型和 high 推理强度，采集/同步不调用模型 API。
+技能、MCP 与 Codex 的关系可参考 [OpenAI 技能说明](https://developers.openai.com/plugins/concepts/skills) 和 [MCP 文档](https://learn.chatgpt.com/docs/extend/mcp?surface=cli)。本项目不会拷贝员工 Codex 登录信息。账号和额度使用各电脑本机登录；自动学习按角色固定模型和 xhigh（极高）推理强度，采集/同步不调用模型 API。

@@ -24,7 +24,7 @@
 
 建议 loop 字段：version、trigger、required_inputs、states、transitions、max_iterations（默认 3）、max_images（默认 6）、stop_when、wait_for、allowed_actions、completion_evidence、failure_route、evidence_ids、evaluation_status（draft/failed/passed）。业务成功与“已生成草稿”必须用不同状态。
 
-夜间调度使用部署目录 scripts/Configure-Learning.ps1 配置：总控 Enable + AutoDispatch，分控 Enable。总控固定 Astra/high、分控固定 6.1 Sol/high。默认工作日18:00–23:59、每台6次模型调用预留、每任务3批。每30秒同步取任务和传回执，5秒本地检查不消耗模型。没有新内容或仅活动元数据不调用模型。暂停入口在面板；手动学习前必须暂停自动模式。message 只确认送达服务，分控用 reply_to_hub 发送 AI 回复。失败保留批次，重启 running 变 interrupted，不盲目重跑付费调用。
+夜间调度使用部署目录 scripts/Configure-Learning.ps1 配置：总控 Enable + AutoDispatch，分控 Enable。总控固定 Astra/xhigh、分控固定 6.1 Sol/xhigh。默认工作日18:00–23:59、每台6次模型调用预留、每任务3批。每30秒同步取任务和传回执，5秒本地检查不消耗模型。没有新内容或仅活动元数据不调用模型。暂停入口在面板；手动学习前必须暂停自动模式。message 只确认送达服务，分控用 reply_to_hub 发送 AI 回复。失败保留批次，重启 running 变 interrupted，不盲目重跑付费调用。
 
 当前自动总控按单份个人总结分析并抽查最多六条原始证据，保存后建立带来源的个人候选草稿。跨员工比较、主动提出补证、完善通用岗位规则与留出评估仍由本技能按以上步骤完成，不能声称后台已经自动完成所有组织知识治理。全局跨员工模型并发控制暂未实现；先一总控两分控试点。
 

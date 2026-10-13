@@ -5,7 +5,7 @@ description: 在联网或独立离线员工分控上用 WorkTrace MCP 总结个�
 
 目标是让下一位执行者能够复现做法。应用名称和流水账不足以说明学会；遇到缺失的判断理由、输入或结果，要具体标明。读取资料不会授予操作软件或对外发送的权限。
 
-先 `worktrace_status` 核对 role=collector、员工编号与 connection_mode。自动执行器固定 gpt-6.1-sol/high；交互复盘也选择该模型与高推理强度。若自动学习启用，先在本机面板暂停学习，等 busy=false 再手动领取/保存。保持现有采集/暂停状态；这份技能只分析已保存证据。公司已授权工作学习时沿用授权，不逐条打断员工确认。
+先 `worktrace_status` 核对 role=collector、员工编号与 connection_mode。自动执行器固定 gpt-6.1-sol/xhigh；交互复盘也选择该模型与极高推理强度。若自动学习启用，先在本机面板暂停学习，等 busy=false 再手动领取/保存。保持现有采集/暂停状态；这份技能只分析已保存证据。公司已授权工作学习时沿用授权，不逐条打断员工确认。
 
 本次循环按 [references/learning-loop.md](references/learning-loop.md) 执行。先 `worktrace_personal_next`：无批次立即结束；有批次使用其 batch_id、digest，并通过 `worktrace_get_evidence` 核对必要原文，通过 `worktrace_tasks` 补充已记录任务上下文；只有批次包含的事件可作为本次引用。必要截图最多六张，未读过的图不得声称已核实。
 

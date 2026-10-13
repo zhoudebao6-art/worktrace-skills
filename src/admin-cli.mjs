@@ -14,6 +14,24 @@ export async function admin({command,role,dir=join(root,'data'),input,output,rec
   return localApi(dir,'setup',role==='hub'?{...data,role:'hub'}:{role:'collector',...(data.format==='worktrace.offline-identity/1.0'?{offline:data}:{enrollment:data})});
  }
  if(!status.configured)throw Error('请先初始化本机');
+ if(['lan-join-status','lan-join-configure','lan-join-link'].includes(command)){
+  if(role!=='hub')throw Error('只有总控可以管理局域网自动接入');
+  return command==='lan-join-configure'?localApi(dir,'lan-join/configure',data):localApi(dir,command==='lan-join-link'?'lan-join/link':'lan-join');
+ }
+ if(command==='invitations-list'||command==='invitations-revoke'){
+  if(role!=='hub')throw Error('只有总控可以管理接入码');
+  return command==='invitations-list'?localApi(dir,'invitations'):localApi(dir,'invitations/revoke',data);
+ }
+ if(command==='invitations-create'){
+  if(role!=='hub')throw Error('只有总控可以生成接入码');
+  if(!output)throw Error('接入码必须通过 --output 保存，不能打印密钥');
+  const dest=resolve(output);if(existsSync(dest))throw Error('目标文件已存在，不覆盖接入码');
+  mkdirSync(dirname(dest),{recursive:true});
+  const invitation=await localApi(dir,'invitations/create',data);
+  try{writeFileSync(dest,JSON.stringify(invitation,null,2),{flag:'wx',mode:0o600});}
+  catch(error){await localApi(dir,'invitations/revoke',{invite_id:invitation.invite_id}).catch(()=>{});throw Error('接入码文件保存失败，请检查文件权限及接入码状态');}
+  return {saved:dest,invite_id:invitation.invite_id,expires_at:invitation.expires_at};
+ }
  if(command==='import-external'){
   if(role!=='collector'||!records)throw Error('外部记录导入需要 collector 角色及 --records 本地 JSON 文件');
   const stat=statSync(records);if(!stat.isFile()||stat.size>16*1024*1024)throw Error('导出 JSON 必须是至多 16MiB 的文件');

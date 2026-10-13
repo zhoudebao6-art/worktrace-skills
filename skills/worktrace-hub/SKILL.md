@@ -3,7 +3,7 @@ name: worktrace-hub
 description: 由总控 Codex 从随技能源码搭建 WorkTrace 环境，准备员工分控接入、登记身份并验收同步；基于新增工作证据整理岗位流程和候选技能。用于无安装包的集中部署、巡检和岗位自动化准备。
 ---
 
-只有用户指定的另一台局域网电脑承担总控；开发/测试本机不是总控。读取或安装技能不会自动指定角色。部署动作在目标总控电脑的 Codex 中执行，先核对用户指定的设备和目录；员工电脑运行分控。持续接收数据由 WorkTrace 服务完成；Codex 按需配置、查询和分析，不需要保持对话轮询。安装 Codex 本身不会采集其他软件的操作。
+只有用户指定的电脑承担总控；读取或安装技能不会自动指定角色。部署动作在目标总控电脑的 Codex 中执行，先核对用户指定的设备和目录；员工电脑运行分控。持续接收数据由 WorkTrace 服务完成；Codex 按需配置、查询和分析，不需要保持对话轮询。安装 Codex 本身不会采集其他软件的操作。
 
 ## 部署与查询
 
@@ -13,11 +13,19 @@ description: 由总控 Codex 从随技能源码搭建 WorkTrace 环境，准备�
 
 首次用 `scripts/bootstrap.ps1 -WorkDir <公司指定独立数据目录>` 搭建指定总控电脑的服务并登记 MCP；它生成不含密钥的 deployment.json。后续使用 `scripts/control.ps1 -Action start` 启动、`-Action status` 检查。不要打印 data/config.json、running.json 或登记文件，它们包含密钥。
 
-按员工清单运行 `scripts/prepare-fleet.ps1`，将一份通用源码放入已有共享目录，把各自登记密钥和接入入口放进每台电脑独享目录。缺少真实清单、共享路径或执行通道时只准备可运行环境并说明缺项，不能扫描整个局域网猜测员工归属或声称已部署其他电脑。
+用户要求同一局域网直接自动连接、无需总控逐台确认时，先按 [references/operations.md](references/operations.md) 的 `lan-join-status` 核对实际网卡网段，再用 `lan-join-configure` 启用用户指定网络的精确 RFC1918 CIDR，使用 `lan-join-link` 生成公司连接链接。用户已授权启用时直接完成，不额外要求审批、邀请码或员工逐台确认。默认关闭此能力，不能扩大到其他 VPN 网卡、公网或任意网段。员工从匿名 clone 的当前完整 `main` 运行 `scripts/Join-Lan.ps1`，填写真实身份，生成本机独立设备密钥并回传心跳。详见 [references/deployment.md](references/deployment.md)；旧 v0.4.1 发布包不含该入口。
 
-没有已授权远程执行通道时，由员工已登录桌面内的 Codex 首次执行 Join-WorkTrace.ps1。已有公司登录脚本或受控远程桌面通道时可以沿用授权，但 WinRM/服务会话里的进程不能当作员工交互桌面采集成功。总控以设备心跳及实际工作样本到达作为验收。
+完整连接链接以 GitHub `tree/main#worktrace-join=v1.` 开头，仅含公司、HTTPS 地址和公开证书，无管理令牌或设备秘密。普通仓库链接不含连接目标，不扫描局域网猜公司；公司实际链接不上传源码。该方式允许可信网段内的人自报身份，不等于核实真实姓名。首次默认不采集和不自动学习，已有离线或不同身份数据不能覆盖。管理接口继续仅本机回环，逐台设备仍以独立秘密认证。
 
-首次部署按 [references/operations.md](references/operations.md) 初始化总控；批量设备由 prepare-fleet 登记。总控公司名和局域网地址用实际值；缺少时询问必要字段。不要初始化第二家公司来解决同步错误。每名员工一份独立登记文件，文件只交给对应电脑，不在聊天里粘贴密钥。
+需要预先登记时，按员工清单运行 `scripts/prepare-fleet.ps1`，将一份通用源码放入已有共享目录，把各自登记密钥和接入入口放进每台电脑独享目录。缺少真实清单或执行通道时只准备可运行环境并说明缺项，不能扫描整个局域网猜测员工归属或声称已部署其他电脑。
+
+用户选择持码自动接入时，使用本次修订新增的 `invitations-create` 管理命令，为每台电脑生成独立、限时、只能登记一个设备的私有 `.invite.json` 文件；员工 Codex 从核验后的完整源码运行 `scripts/Join-WithInvite.ps1`，填写真实唯一的 employee_id、员工姓名和电脑名称。接入码持有人自行申报身份，不代表系统核实了姓名；只交给指定接收人，不共用、不在对话粘贴、不放进公共源码或发布 ZIP。首次默认不采集；保留手工登记入口。参数、重试和撤销规则见 [references/deployment.md](references/deployment.md) 与 [references/operations.md](references/operations.md)。
+
+局域网和外网接入都要求员工能实际访问邀请码允许的 HTTPS 地址，并通过证书校验。跨网采用公司批准的 Tailscale 私有网络时，须先完成双方登录、设备批准、访问策略及证书地址配置；仅安装 Tailscale、尚未登录不能算外网已连通。只开放同步与已配置的 LAN 或持码登记入口，管理接口继续仅本机回环；不以共享管理令牌、开放 WinRM 或关闭 TLS 校验替代设备接入。
+
+首次在员工已登录桌面内，由员工电脑的 Codex 执行 Join-Lan.ps1 或对应的专属 Join-WorkTrace.ps1。已有公司登录脚本或受控远程桌面通道时可以沿用授权，但 WinRM/服务会话里的进程不能当作员工交互桌面采集成功。总控分别以设备心跳、实际工作样本与个人总结到达验收。
+
+首次部署按 [references/operations.md](references/operations.md) 初始化总控；按用户要求选择 LAN 自动登记、prepare-fleet 或邀请码。总控公司名和局域网地址用实际值；缺少时询问必要字段。不要初始化第二家公司来解决同步错误。手工登记时每名员工一份独立登记文件，只交给对应电脑；自动登记由每台电脑生成设备秘密，不在聊天里粘贴密钥。
 
 先验证本机服务，再查设备 last_seen 和分控同步结果。服务启动成功不等于多电脑已连通；只有真实员工端同步到达后才确认联网部署。防火墙或休眠问题按实际错误处理，不能通过关闭证书校验解决。
 
@@ -25,7 +33,7 @@ description: 由总控 Codex 从随技能源码搭建 WorkTrace 环境，准备�
 
 启用后台夜间学习先读 [references/nightly-loop.md](references/nightly-loop.md)，在真实部署目录运行 Configure-Learning.ps1；先验证指定模型和暂停状态。持续学习先读 [references/learning-loop.md](references/learning-loop.md)。优先通过 `worktrace_personal_history` 看分控方法总结，再使用增量批次：先 `worktrace_analysis_next`，source=personal，按 event_id 用 `worktrace_get_evidence` 核实需要的原文，再 `worktrace_analysis_save` 保存带证据的 findings 和 open_questions。basis 分为 observed、hypothesis、unknown；保存分析稿不代表业务规则已经验证。单次默认最多三批、每批 50 条摘要、必要截图总计不超过六张；还需更多证据时保存缺项，下次再处理。没有新批次立即结束。故障重开会返回未完成批次，离线晚到事件进入新批次，不按事件发生时间误丢。
 
-已有结论从 `worktrace_analysis_history` 读取，避免重新阅读相同原始材料。自动执行器固定 gpt-6-astra/high。交互式执行本技能也应选择 Astra 高推理强度；技能不能自行切换当前对话模型。手动领取/保存前先暂停本机自动学习并确认 busy=false；只有单总控分析流程。
+已有结论从 `worktrace_analysis_history` 读取，避免重新阅读相同原始材料。自动执行器固定 gpt-6-astra/xhigh。交互式执行本技能也应选择 Astra 极高推理强度；技能不能自行切换当前对话模型。手动领取/保存前先暂停本机自动学习并确认 busy=false；只有单总控分析流程。
 
 ## 复盘与技能候选
 

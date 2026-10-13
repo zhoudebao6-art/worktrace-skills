@@ -34,3 +34,22 @@ work/
 *.wthandoff
 **/offline-identity.json
 **/handoff-manifest.json
+
+# Per-device invitation, private retry state and atomic-write remnants.
+**/self-enrollment/
+**/lan-enrollment/
+**/self-lan-enrollment/
+invite.json
+invitation.json
+request.json
+join-request.json
+join-state.json
+*.invite.json
+*.invitation.json
+*.request.json
+*.join-state.json
+*.invite.json.*.tmp
+*.invitation.json.*.tmp
+*.request.json.*.tmp
+enrollment.json.*.tmp
+request.json.*.tmp

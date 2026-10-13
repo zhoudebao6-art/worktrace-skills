@@ -107,7 +107,7 @@ if ($LASTEXITCODE -ne 0) { throw '文件范围配置失败。' }
 powershell -NoProfile -ExecutionPolicy Bypass -File 'D:\WorkTraceChem\scripts\Configure-Learning.ps1' -DataDir 'D:\WorkTraceChem\data' -Action Enable -MaxCallsPerDay 6 -Start '18:00' -End '23:59'
 ```
 
-采用本机 Codex 登录、gpt-6.1-sol/high，不共享账号。时间按真实下班时间调整；模型不可用时报告个人自动学习尚未验收，不静默换模型。本地服务创建每日幂等的 personal.summarize 任务，最多三批，消费新增原始证据并保存 learning.summary。无总控任务也应能运行；必须验收队列、回执与实际总结，不能只看开关。
+采用本机 Codex 登录、gpt-6.1-sol/xhigh，不共享账号。时间按真实下班时间调整；模型不可用时报告个人自动学习尚未验收，不静默换模型。本地服务创建每日幂等的 personal.summarize 任务，最多三批，消费新增原始证据并保存 learning.summary。无总控任务也应能运行；必须验收队列、回执与实际总结，不能只看开关。
 
 离线任务与总控任务分开，不上传本地任务回执，也不能给本地任务伪造“回复总控”。暂停、超时、重启和日预算受执行器控制；无新证据结束，失败不无限重试。手动复盘先暂停学习并等 busy=false，保留原采集状态。纯窗口元数据只能得到 metadata_only，总结不升级为“已经学会岗位”。
 

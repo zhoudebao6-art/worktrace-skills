@@ -1,4 +1,6 @@
 import {personalDigest} from './personal-digest.mjs';
+import {initInvitations,createInvitation,listInvitations,revokeInvitation,redeemInvitation,createEnrollmentLimiter,readEnrollmentBody} from './invitations.mjs';
+import {initLanJoin,configureLanJoin,lanJoinStatus,createLanJoinLink,assertLanJoinAllowed,enrollLanDevice} from './lan-join.mjs';
 import {createOfflineHandoff,importOfflineHandoff} from './offline-handoff.mjs';
 import {createOfflineIdentity,validateAdoptionIdentity,adoptOfflineDevice} from './offline-identity.mjs';
 import {FileEvidenceCollector} from './file-evidence.mjs';
@@ -36,10 +38,19 @@ export async function startApp({dir=process.env.WORKTRACE_DATA||join(root,'data'
  const token=secret();let collector=null,hub=null,syncing=false,lastSync=null,lastError='',timer,workerTimer,worker=null,workerPromise=null,fileCollector=null,fileTimer=null,filePromise=null,handoffBusy=false;
  function attachWorker(){if(!worker)worker=new LearningWorker({store,config,dir,...(workerRunner?{runner:workerRunner}:{})});}
  function attachCollector(){assert(config.host_binding===hash(config.org_id+':'+hostname()),'此运行数据目录属于另一台电脑，请用独立登记文件重新配置');collector=new Collector({store,config,dir,root,onStateChange:()=>fileCollector?.invalidate(),onError:m=>{lastError=m;}});fileCollector=new FileEvidenceCollector({store,config,dir,root,isActive:()=>!!collector?.enabled});}
- async function listenHub(){if(hub||config?.role!=='hub')return;hub=https.createServer({pfx:readFileSync(join(dir,'hub.pfx')),passphrase:config.cert_password},async(req,res)=>{
-  try{assert(req.method==='POST'&&req.url==='/v1/sync','仅提供同步接口');const device=store.device(req.headers['x-worktrace-device']);assert(device&&!device.revoked&&safeEqual(device.token_hash,hash(String(req.headers.authorization||'').replace(/^Bearer /,''))),'设备认证失败');const b=await body(req);assert(b.org_id===config.org_id&&b.device_id===device.device_id&&id(b.installation_id),'设备信息不匹配');assert(!device.installation_id||device.installation_id===b.installation_id,'登记文件已用于另一安装，请单独登记设备');assert(Array.isArray(b.events)&&b.events.length<=MAX_BATCH,'单批最多 50 条事件');assert(Array.isArray(b.policies),'缺少策略');for(const p of b.policies)validatePolicy(p.value);
+ async function listenHub(){if(hub||config?.role!=='hub')return;initInvitations(store);initLanJoin(store);const allowEnrollment=createEnrollmentLimiter(),allowLanEnrollment=createEnrollmentLimiter();hub=https.createServer({pfx:readFileSync(join(dir,'hub.pfx')),passphrase:config.cert_password},async(req,res)=>{
+  try{
+   if(req.url==='/v1/lan/enroll'){
+    if(!allowLanEnrollment(req.socket.remoteAddress||'unknown')){res.setHeader('Retry-After','60');const error=new Error('接入请求过于频繁，请稍后重试');error.status=429;throw error;}
+    assert(req.method==='POST','接入接口仅接受 POST');assertLanJoinAllowed(store,config,req.socket.remoteAddress);const enrollment=enrollLanDevice(store,config,await readEnrollmentBody(req),{remoteAddress:req.socket.remoteAddress});json(res,200,enrollment);return;
+   }
+   if(req.url==='/v1/enroll'){
+    if(!allowEnrollment(req.socket.remoteAddress||'unknown')){res.setHeader('Retry-After','60');const error=new Error('接入请求过于频繁，请稍后重试');error.status=429;throw error;}
+    assert(req.method==='POST','接入接口仅接受 POST');const enrollment=redeemInvitation(store,config,await readEnrollmentBody(req));json(res,200,enrollment);return;
+   }
+   assert(req.method==='POST'&&req.url==='/v1/sync','仅提供同步及持码接入接口');const deviceId=req.headers['x-worktrace-device'];assert(id(deviceId),'设备认证失败');const device=store.device(deviceId);assert(device&&!device.revoked&&safeEqual(device.token_hash,hash(String(req.headers.authorization||'').replace(/^Bearer /,''))),'设备认证失败');const b=await body(req);assert(b.org_id===config.org_id&&b.device_id===device.device_id&&id(b.installation_id),'设备信息不匹配');assert(!device.installation_id||device.installation_id===b.installation_id,'登记文件已用于另一安装，请单独登记设备');assert(Array.isArray(b.events)&&b.events.length<=MAX_BATCH,'单批最多 50 条事件');assert(Array.isArray(b.policies),'缺少策略');for(const p of b.policies)validatePolicy(p.value);
    const result=store.ingest(b.events,b.assets,config.org_id,device.device_id,b.policies,b.files||[]);const jobAcks=acceptReceipts(store,device.device_id,b.job_receipts||[]);const replyAcks=acceptReplies(store,device.device_id,b.replies||[]);store.db.prepare('UPDATE devices SET installation_id=?,last_seen=?,last_error=NULL WHERE device_id=?').run(b.installation_id,new Date().toISOString(),device.device_id);settleRequests(store,b.events);json(res,200,{...result,event_ids:b.events.map(e=>e.event_id),learning_requests:requestsFor(store,device.device_id),jobs:outgoingJobs(store,device.device_id),job_acks:jobAcks,reply_acks:replyAcks,server_time:new Date().toISOString()});
-  }catch(e){json(res,400,{error:e.message});}
+  }catch(e){if(req.url==='/v1/enroll'||req.url==='/v1/lan/enroll')res.setHeader('Connection','close');json(res,[400,401,409,413,429].includes(e.status)?e.status:400,{error:e.message});}
  });hub.requestTimeout=30000;hub.headersTimeout=10000;await new Promise((ok,no)=>{hub.once('error',no);hub.listen(config.hub_port,config.listen_host||'0.0.0.0',ok);});}
  async function synchronize(){if(handoffBusy)return {skipped:true,reason:'handoff_in_progress'};if(config?.connection_mode==='offline')return {skipped:true,mode:'offline',reason:'离线记录，等待人工移交'};if(!config||config.role!=='collector'||syncing)return {skipped:true};syncing=true;try{let sent=0;for(let i=0;i<10;i++){const batch=store.batch(store.get('sync_cursor')||0,20);const r=await postSync(config,{org_id:config.org_id,device_id:config.device_id,installation_id:config.installation_id,job_receipts:pendingReceipts(store),replies:pendingReplies(store),...batch});assert(Array.isArray(r.event_ids)&&r.event_ids.length===batch.events.length&&batch.events.every(e=>r.event_ids.includes(e.event_id)),'同步确认不完整，保留本地待重传');receiveRequests(store,config,r.learning_requests||[]);receiveJobs(store,config,r.jobs||[]);ackReceipts(store,r.job_acks||[]);ackReplies(store,r.reply_acks||[]);if(worker?.activeJob&&job(store,worker.activeJob)?.state==='cancelled')worker.controller?.abort();if(batch.events.length)store.set('sync_cursor',batch.events.at(-1).sequence);sent+=batch.events.length;lastSync=new Date().toISOString();lastError='';if(!batch.events.length||store.stats().pending===0)break;}return {sent};}catch(e){lastError=e.message;return {error:e.message};}finally{syncing=false;}}
  function status(){return {configured:!!config,role:config?.role||null,org_name:config?.org_name,org_id:config?.org_id,employee_id:config?.employee_id,employee_name:config?.employee_name,device_id:config?.device_id,hub_url:config?.hub_url,connection_mode:config?.connection_mode||(config?.role==='collector'?'hub':null),ips:config?.connection_mode==='offline'?['127.0.0.1']:ips(),stats:store.stats(),learning:learningStatus(store,config),worker:worker?.status()||null,devices:config?.role==='hub'?store.devices():[],collection:{enabled:!!collector?.enabled,state:collector?.state||'未启用采集',policy:collector?.policy||store.get('policy')||defaultPolicy,last_sample:collector?.lastSample||null},files:fileCollector?.status()||null,sync:{mode:config?.connection_mode==='offline'?'offline':'network',state:config?.connection_mode==='offline'?'离线记录，等待人工移交':null,running:syncing,last_success:lastSync,error:lastError},protocol:'1.2',supported_protocols:['1.0','1.1','1.2'],version:SOFTWARE_VERSION};}
@@ -53,6 +64,9 @@ export async function startApp({dir=process.env.WORKTRACE_DATA||join(root,'data'
    // path independent of history counts, JSON parsing, job queues and blobs.
    if(req.method==='GET'&&u.pathname==='/api/status/brief'){json(res,200,{configured:!!config,role:config?.role||null,version:SOFTWARE_VERSION,collection:{enabled:!!collector?.enabled,state:collector?.state||'未启用采集',last_sample:collector?.lastSample||null},worker:{busy:!!worker?.busy},files:{busy:!!fileCollector?.busy}});return;}
    if(req.method==='GET'&&u.pathname==='/api/status'){json(res,200,status());return;}
+   if(req.method==='GET'&&u.pathname==='/api/invitations'){json(res,200,listInvitations(store,config));return;}
+   if(req.method==='GET'&&u.pathname==='/api/lan-join'){json(res,200,lanJoinStatus(store,config));return;}
+   if(req.method==='GET'&&u.pathname==='/api/lan-join/link'){json(res,200,createLanJoinLink(store,config));return;}
    if(req.method==='GET'&&u.pathname==='/api/knowledge/search'){
     assert(config,'请先配置角色');const q=Object.fromEntries(u.searchParams);
     for(const k of ['limit','scan_limit'])if(Object.hasOwn(q,k))q[k]=Number(q[k]);
@@ -90,6 +104,9 @@ export async function startApp({dir=process.env.WORKTRACE_DATA||join(root,'data'
    if(u.pathname==='/api/shutdown'){assert(!handoffBusy,'移交正在进行，请完成后再关闭');json(res,200,{ok:true});setTimeout(()=>close(),100);return;}
    assert(config,'请先配置本机角色');
    assert(!handoffBusy,'完整移交正在进行，暂不能修改本机状态');
+   if(u.pathname==='/api/invitations/create'){json(res,200,createInvitation(store,config,b));return;}
+   if(u.pathname==='/api/invitations/revoke'){json(res,200,revokeInvitation(store,config,b));return;}
+   if(u.pathname==='/api/lan-join/configure'){json(res,200,configureLanJoin(store,config,b));return;}
    if(u.pathname==='/api/handoff/export'){
     assert(config.role==='collector'&&typeof b.finish_pilot==='boolean','仅分控可生成完整移交包');assert(!worker.busy&&!fileCollector?.busy&&!syncing,'采集解析或学习正在完成，请暂停后等待再导出');
     const previous={capture_enabled:!!collector.enabled,worker_policy:worker.policy};let exported=null,failure=null;handoffBusy=true;

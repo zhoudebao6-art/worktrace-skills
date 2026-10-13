@@ -7,7 +7,15 @@ description: 在已告知员工的固定工作电脑上部署和维护 WorkTrace
 
 部署与维护使用本技能 `scripts/control.ps1`。先 `-Action start`，再 `-Action status`。已配置时核对员工和设备编号，不重复初始化或更换身份。详细参数见 [references/operations.md](references/operations.md)。只需导入用户已有的 ActivityWatch/Screenpipe 导出时，按 [references/external-records.md](references/external-records.md) 在对应的已部署分控预览、导入，保持采集暂停状态；不为导入另建总控或安装上游采集器。
 
-先从 status 核对 connection_mode。联网首次接入使用管理员交给此电脑的专属 .enroll.json，通过文件路径传给脚本；不要把密钥贴进对话。尚无部署绑定且用户要求独立离线时，从核验后的 v0.4.1 或兼容后续完整发布源码目录运行 scripts/Initialize-OfflineNode.ps1 -IdentityFile <身份.json> -WorkDir <独立运行目录>；身份文件 format=worktrace.offline-identity/1.0，包含 org_name、employee_id、employee_name、label，可选统一 org_id。具体下载和验收见[离线部署手册](https://github.com/zhoudebao6-art/worktrace-skills/blob/v0.4.1/docs/offline-collector.md)。不要用 hub 初始化或伪造 enrollment 代替离线入口。
+先从 status 核对 connection_mode。用户提供含 `#worktrace-join=v1.` 片段的公司 GitHub 连接链接且要求同网自动接入时，保留完整链接，匿名 clone 当前 `main`，使用实际可用 Git 或 Codex 自带 Git（可设 WORKTRACE_GIT）。读取源码 AGENTS.md、核验来源及干净 commit，从完整源码运行 `scripts/Join-Lan.ps1 -ConnectionLink <完整链接> -WorkDir <本机长期目录> -EmployeeId <真实唯一编号> -EmployeeName <真实姓名> -ComputerLabel <实际电脑名>`。总控已启用允许网段时无需邀请码、私有文件或总控逐台确认；员工身份缺失时收集真实值，不猜测或冒用。普通仓库地址不包含公司目标，不能扫描局域网猜总控。详见 [references/operations.md](references/operations.md) 和[当前下载手册](https://github.com/zhoudebao6-art/worktrace-skills/blob/main/docs/download.md)。旧 v0.4.1 发布包没有 LAN Join 入口，不能伪造下载清单替代源码。
+
+LAN Join 建立独立设备密钥、本机服务、三个分控技能和 MCP，核验身份心跳及 `gpt-6.1-sol/xhigh`；首次记录和自动学习默认关闭。保留 `WorkDir\setup\lan-enrollment` 的私有请求和登记状态供同身份重试，不输出秘密，不复制给其他电脑。禁止覆盖已有离线、其他公司或不同员工身份。链接内只有公司信息、HTTPS 地址和公开证书；继续验证 TLS，不能接受任意地址覆盖或开放管理端口。
+
+管理员手工登记方式继续接受交给此电脑的专属 .enroll.json，通过文件路径传给脚本；不要把密钥贴进对话。尚无部署绑定且用户要求独立离线时，从核验后的 v0.4.1 或兼容后续完整发布源码目录运行 scripts/Initialize-OfflineNode.ps1 -IdentityFile <身份.json> -WorkDir <独立运行目录>；身份文件 format=worktrace.offline-identity/1.0，包含 org_name、employee_id、employee_name、label，可选统一 org_id。具体下载和验收见[离线部署手册](https://github.com/zhoudebao6-art/worktrace-skills/blob/v0.4.1/docs/offline-collector.md)。不要用 hub 初始化或伪造 enrollment 代替离线入口。
+
+管理员提供私有 `.invite.json` 时，使用本次修订完整源码的 `scripts/Join-WithInvite.ps1 -InviteFile <本人邀请码文件> -WorkDir <独立运行目录> -EmployeeId <真实唯一员工编号> -EmployeeName <真实姓名> -ComputerLabel <实际电脑名>`，详见 [references/operations.md](references/operations.md)。原公开 v0.4.1 包没有该入口。一码只登记一台电脑，凭码填写身份不等于系统核实姓名；不能借用其他员工编号。请求状态和登记文件保留原位供重试，不输出密钥，不复制到别的电脑，也不放入公共源码或发布包。已有离线、其他公司或不同员工身份时停止，不覆盖初始化。
+
+持码接入首次默认不采集，登录启动需明确指定；自动学习另行配置，模型应核验为 `gpt-6.1-sol/xhigh`。员工电脑必须实际可达邀请码允许的 HTTPS 地址。跨网使用公司 Tailscale 时先完成登录、设备批准和访问策略；尚未登录不能声称外网已连通。只使用文件内可信证书，不跳过 TLS 校验。邀请码过期或撤销不等于已登记设备停用；设备撤销由总控单独完成。
 
 首次部署默认记录和自动学习均未启用，身份变化必须拒绝；重试沿用原 org_id、device_id、installation_id、stream_id 与暂停状态。多台离线电脑属于同一公司时沿用同一个 org_id，不能拷贝其他电脑的 data。已有版本禁止直接初始化覆盖；卡顿诊断或原路径升级按 [references/performance.md](references/performance.md) 先核验来源、空闲停机、完整冷备再更新，核对实际运行版本与原证据。模式转换另作迁移，不与性能升级混用。公司已统一告知时沿用部署授权，不要求员工每一步确认。
 

@@ -94,6 +94,13 @@ test('共享技能：污染源码与引擎哈希失配拒绝复制',psOptions,t=
  const f=fixture(t),engine=join(f.repo,'skills','worktrace-hub','assets','engine');
  const binary=join(engine,'runtime','node.exe');writeFileSync(binary,'stale excluded runtime');let r=f.run();rejected(r,/运行数据、凭据或运行时二进制/);assert(!existsSync(f.skills));rmSync(binary);
  const secret=join(f.repo,'skills','worktrace-hub','deployment.json');writeFileSync(secret,'{"root":"private"}');r=f.run();rejected(r,/运行数据、凭据或运行时二进制/);assert(!existsSync(f.skills));rmSync(secret);
+ for(const name of ['employee.invite.json','request.json','request.json.uuid.tmp']){
+  const privateFile=join(f.repo,'skills','worktrace-hub',name);writeFileSync(privateFile,'synthetic only');r=f.run();rejected(r,/运行数据、凭据或运行时二进制/);assert(!existsSync(f.skills));rmSync(privateFile);
+ }
+ for(const field of ['invite_token','request_secret','device_token']){
+  const privateFile=join(f.repo,'skills','worktrace-hub','renamed-notes.txt'),token='Z'.repeat(43);writeFileSync(privateFile,JSON.stringify({nested:{[field]:token}}));
+  r=f.run();rejected(r,/私人接入码、接入请求或登记凭据/);assert(!r.text.includes(token));assert(!existsSync(f.skills));rmSync(privateFile);
+ }
  const file=join(engine,'src','protocol.mjs');writeFileSync(file,readFileSync(file,'utf8')+'\n// invalid mirrored file\n');f.commit();r=f.run();rejected(r,/引擎清单校验/);assert(!existsSync(f.skills));
 });
 

@@ -1,5 +1,7 @@
 # 验证边界
 
+以下保留历史验证时使用的 `high` 设置和实测结果。本次源码修订的现行配置为总控 `gpt-6-astra/xhigh`、分控 `gpt-6.1-sol/xhigh`（极高）；旧测试记录不构成新强度的验证。当前操作方法见 [夜间循环手册](nightly-loop.md)。
+
 当前 v0.3 的新增功能与完整回归结果见 [v0.3 验证记录](validation-v0.3.md)。下文为此前 v0.2 的历史验证，不能当作本次新增上游真实实例联调或员工业务效果证明。
 
 2026-10-13 实测：27/27 Node 测试、九项浏览器流程、四个 Skill 格式校验，以及一总控两分控独立进程部署通过。真实 Sol/high → Astra/high 合成案例调用与候选落库通过。详见 review-report.md 与 verification.json。自动测试使用合成员工与案件，不使用真实客户正文。
@@ -26,4 +28,4 @@ $env:WORKTRACE_TEST_CODEX=(Get-Command codex.exe).Source
 & runtime/node.exe tests/real-loop.verify.mjs
 ```
 
-脚本使用合成内容，分别调用 Sol/high 与 Astra/high；不启动微信，结果写入本地忽略文件。测试前准备 D 盘 TEMP 和运行时。
+当前修订的脚本使用合成内容，分别调用 Sol/xhigh 与 Astra/xhigh；不启动微信，结果写入本地忽略文件。测试前准备 D 盘 TEMP 和运行时。
