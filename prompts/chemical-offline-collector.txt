@@ -1,11 +1,11 @@
-请在这台化工专利案件员工的 Windows 电脑上，部署并验收 WorkTrace v0.4.0“独立离线分控”，然后按已确认工作时段记录并总结。使用正式发布能力，不要求员工现场重新实现、派生或修改源码。
+请在这台化工专利案件员工的 Windows 电脑上，部署并验收 WorkTrace v0.4.1“独立离线分控”，然后按已确认工作时段记录并总结。使用正式发布能力，不要求员工现场重新实现、派生或修改源码。
 
 一、先从公开固定版本取得完整软件
-读取 https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.4.0 ，下载 Assets 中 worktrace-skills-v0.4.0.zip 与 SHA256SUMS.txt。直接下载：
-https://github.com/zhoudebao6-art/worktrace-skills/releases/download/v0.4.0/worktrace-skills-v0.4.0.zip
-https://github.com/zhoudebao6-art/worktrace-skills/releases/download/v0.4.0/SHA256SUMS.txt
+读取 https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.4.1 ，下载 Assets 中 worktrace-skills-v0.4.1.zip 与 SHA256SUMS.txt。直接下载：
+https://github.com/zhoudebao6-art/worktrace-skills/releases/download/v0.4.1/worktrace-skills-v0.4.1.zip
+https://github.com/zhoudebao6-art/worktrace-skills/releases/download/v0.4.1/SHA256SUMS.txt
 无需 Git、GitHub 登录或私有仓库权限，不读取发起方电脑本地路径。用 curl.exe -L --fail 或浏览器下载；校验唯一对应的 ZIP SHA256，再完整解压到一个新的源码目录。GitHub 自动生成的 Source code ZIP 不能代替专用发布包。包根应直接含 scripts、skills 和 .worktrace-source.json。网络失败或版本不符时报告实际错误，不假装取得或回退到不支持离线的旧版本。
-阅读包内 AGENTS.md、docs/offline-collector.md、docs/nightly-loop.md 及三个分控 SKILL.md。固定版本在线手册：https://github.com/zhoudebao6-art/worktrace-skills/blob/v0.4.0/docs/offline-collector.md 。不需要总控电脑先运行部署。
+阅读包内 AGENTS.md、docs/offline-collector.md、docs/nightly-loop.md 及三个分控 SKILL.md。固定版本在线手册：https://github.com/zhoudebao6-art/worktrace-skills/blob/v0.4.1/docs/offline-collector.md 。不需要总控电脑先运行部署。
 
 二、角色、身份与必要信息
 这台电脑固定对应一位化工案件员工，只是 role=collector、connection_mode=offline。当前没有公司总控，未来总控在另一台电脑、另一局域网。当前本地保存，数日后人工带回资料；不创建 hub，不扫描其他电脑，不伪造地址、证书、登记或同步成功。
@@ -26,7 +26,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File 'D:\WorkTraceChemSource\scri
 四、记录范围与化工证据
 默认只有工作日 09:00–18:00 的 15 秒应用活动采样，正文和截图关闭；按已确认范围配置实际工作时段、业务进程和正文/截图。先验证真实 UIA 正文，必要时使用允许的窗口图像；窗口标题、采样数和“打开了文档”不能证明学会或办结。
 按 docs/offline-collector.md 配置 files-configure：只允许明确资料目录和扩展名，设置文件大小、每轮数量及间隔上限。离线单文件最多 20 MiB，联网最多 4 MiB。文件取证受同一采集暂停/工作时段约束；首次扫描仅记录稳定候选，至少间隔配置时间再次扫描后才保存稳定版本。原文件变化形成新版本，重复扫描去重，不改原稿。
-v0.4.0 保存 document.version 1.2 事件与数据库内原件、哈希和解析说明。当前可解析 UTF-8/UTF-16LE 文本、DOCX 正文/表中文字、XLSX 单元格坐标与原值/公式缓存；PDF 暂只保留原件。化学结构图、公式图、Word 修订和批注等不能宣称已完整识别，必须保留缺口。需要核验原件时使用 file-extract，按单条事件编号导出到新的审阅文件，不能覆盖原工作文件。
+v0.4.1 保存 document.version 1.2 事件与数据库内原件、哈希和解析说明。当前可解析 UTF-8/UTF-16LE 文本、DOCX 正文/表中文字、XLSX 单元格坐标与原值/公式缓存；PDF 暂只保留原件。化学结构图、公式图、Word 修订和批注等不能宣称已完整识别，必须保留缺口。需要核验原件时使用 file-extract，按单条事件编号导出到新的审阅文件，不能覆盖原工作文件。
 先用明确允许目录中的合成样本验证记录、保存版本、个人批次和引用，再核验一小段真实工作及一次真实保存版本。达到范围和内容验收后再恢复记录；不要求员工逐步填写日志。
 优先观察实际发生的做法：理解交底、识别资料缺项、核对组分/配比/单位/工艺条件、结构式与反应关系、实施例/对比例和测试证据、权利要求及说明书修改、检索对照、客户或审查意见回复、交叉核验与交付。它们只是观察维度，不预设员工的流程。
 化学名称、数值、范围、单位、条件和实验结论要能回到原件。区分客户资料、人工修改、AI 推断和未知；OCR 不确定时保留定位，不编造实验数据、检索结果、员工理由或业务完成。客户/案件 ID 不明保持未知，不凭标题或联系人同名猜测。

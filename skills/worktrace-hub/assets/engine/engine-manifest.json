@@ -1,6 +1,6 @@
 {
   "format": "worktrace.source/1.0",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "files": [
     {
       "path": "Install-Skills.ps1",
@@ -14,8 +14,8 @@
     },
     {
       "path": "Tray.ps1",
-      "sha256": "096557a1450a209142f9bd6411da4cc2658c3db6b763c3b62c99017a5b64d42a",
-      "size": 1826
+      "sha256": "b9b940d19c1672402ca3df00dc916d61a4eaccdade6cbf9fddea6f16fe4476a0",
+      "size": 1838
     },
     {
       "path": "bridge/certificate.ps1",
@@ -24,18 +24,18 @@
     },
     {
       "path": "bridge/extract-document.ps1",
-      "sha256": "4f3fa6ac542095f955d7c6054cbf28f7511897146c9751def0c471578aad3620",
-      "size": 3287
+      "sha256": "15d86a49c362d2f698f11e3495ade3cbdd0905ef93118806f59c3ec63556882c",
+      "size": 6014
     },
     {
       "path": "bridge/observe.ps1",
-      "sha256": "2f4ae7863e43a2018a2d158c3cbdef9768f283c02a09488b56b81c21e600fb13",
-      "size": 7980
+      "sha256": "fe9635c497b017b3f31561b7b24f2944b7546ff979518c2b58f588e0c9f61c9c",
+      "size": 12155
     },
     {
       "path": "public/app.js",
-      "sha256": "3277fe9687bad94e0d3e502c28cfde108762984800b1f41547807618f442f376",
-      "size": 14958
+      "sha256": "2d64dd7cbe29cf987194214a5e934749567168df9b7cd82e6d0afc7c45e95dc2",
+      "size": 15214
     },
     {
       "path": "public/index.html",
@@ -73,6 +73,11 @@
       "size": 3430
     },
     {
+      "path": "scripts/Measure-CollectorPerformance.ps1",
+      "sha256": "8e590deb11240439355746b93f219ee613af4822daa6465c168d24dffb19066d",
+      "size": 9691
+    },
+    {
       "path": "scripts/Offline-Handoff.ps1",
       "sha256": "35b39c90314b900f75f87d973dd04a7edc6bceeda5bb739cde90b73689435243",
       "size": 2856
@@ -89,8 +94,8 @@
     },
     {
       "path": "skills/worktrace-collector/SKILL.md",
-      "sha256": "c9b2b1c10df611efe2c5bca66b847480e3566512f504a4cf0dd3ef015f75baee",
-      "size": 4926
+      "sha256": "c00322eec3515d8afe79af4cfb0503e3edab73695ce4e7c536582d456bb9d600",
+      "size": 5129
     },
     {
       "path": "skills/worktrace-collector/agents/openai.yaml",
@@ -106,6 +111,11 @@
       "path": "skills/worktrace-collector/references/operations.md",
       "sha256": "4427ae083c5ad0cc8dc77a36ce912ade8d84a9d3d1b5510ba77d9a90af65f5e3",
       "size": 2091
+    },
+    {
+      "path": "skills/worktrace-collector/references/performance.md",
+      "sha256": "c9547c323f1e838a0f31e86ae0bb9e977feb58abc269b49ca13955681fa89553",
+      "size": 2220
     },
     {
       "path": "skills/worktrace-collector/scripts/control.ps1",
@@ -154,8 +164,8 @@
     },
     {
       "path": "src/collector.mjs",
-      "sha256": "4789a763ffa5a9fe7a401b638de85156a3a6d592e511a1131ce496651298b26e",
-      "size": 6402
+      "sha256": "7716615ccd48da47f8f53f9a817aefddf26aa9fb90bf69cee341f1068bf90086",
+      "size": 7496
     },
     {
       "path": "src/external-records.mjs",
@@ -164,8 +174,8 @@
     },
     {
       "path": "src/file-evidence.mjs",
-      "sha256": "50327a443a5935951c91ba0b927d93c418d92484fec9a88f64531da71a2bc605",
-      "size": 12459
+      "sha256": "fed4e78a56b19b2c5640c5e8ab7091d3ac5bc4e79498354bc9bffd84d295621e",
+      "size": 17033
     },
     {
       "path": "src/handoff-cli.mjs",
@@ -189,8 +199,8 @@
     },
     {
       "path": "src/learning.mjs",
-      "sha256": "560615358eccc57a04986ee3673c7403babc212480f686f9e8ec57d0ed373f1c",
-      "size": 13392
+      "sha256": "94f09a53823e4c5b14fba556d867def9d1cf8d42511299704529bf59cf0e341a",
+      "size": 13498
     },
     {
       "path": "src/local-api.mjs",
@@ -224,7 +234,7 @@
     },
     {
       "path": "src/protocol.mjs",
-      "sha256": "37b2af197aa7ca684138818251ae5e6f8d5a61af2949cf1be45276dfd5bff001",
+      "sha256": "2d9f4a154874c54e2929466f699de12a74399404401aba4d5d3f5adbe5f78129",
       "size": 11581
     },
     {
@@ -234,13 +244,13 @@
     },
     {
       "path": "src/server.mjs",
-      "sha256": "5e6c9d84be58b6ac6a9819087b9905ab83e37ba363118577ae8295b89a7dd247",
-      "size": 28423
+      "sha256": "2e629f4fd2e21d4b9e6f20a8d0d0968b8746656fc323399f5d92d355ad69baa0",
+      "size": 28923
     },
     {
       "path": "src/store.mjs",
-      "sha256": "f46e786b4ee46414f71d3a9626fa0de2fcf2f56ece088a6cb2d9a77ae2dac5c0",
-      "size": 11750
+      "sha256": "2b44891ae2b288066caa7a5722da31a7f147af1ba583d0e32b6df3814d5c8cbe",
+      "size": 12052
     },
     {
       "path": "src/work.mjs",
@@ -249,8 +259,8 @@
     },
     {
       "path": "src/worker.mjs",
-      "sha256": "d2e93a7c175ff64e02a754053ade437f118cdf0d754e11a19a972ba823cccdc2",
-      "size": 20764
+      "sha256": "26f384f84d1c162639055a7ff0c4b2539cb29affbbc6f1d849af0ef3c8d4f860",
+      "size": 21153
     },
     {
       "path": "设置登录启动.ps1",

@@ -1,6 +1,8 @@
 ﻿param([Parameter(Mandatory=$true)][string]$Policy,[switch]$Once,[switch]$SelfTest)
 $ErrorActionPreference='Stop'
 [Console]::OutputEncoding=[Text.UTF8Encoding]::new($false)
+# Only this bridge is background work; never reprioritize the observed app.
+try{[Diagnostics.Process]::GetCurrentProcess().PriorityClass=[Diagnostics.ProcessPriorityClass]::BelowNormal}catch{}
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes,System.Drawing,System.Windows.Forms
 Add-Type @'
 using System;
@@ -22,34 +24,50 @@ public static class WorkTraceNative {
  public static double Idle(){INPUT i=new INPUT();i.cbSize=(uint)Marshal.SizeOf(i);GetLastInputInfo(ref i);return ((uint)Environment.TickCount-i.dwTime)/1000.0;}
 }
 '@
-function Read-Window([IntPtr]$handle){
- $texts=[Collections.Generic.List[string]]::new();$masks=[Collections.Generic.List[object]]::new();$truncated=$false;$seen=0
- if([WorkTraceNative]::IsEdit($handle)){
-  $bounds=[WorkTraceNative+RECT]::new();[void][WorkTraceNative]::GetWindowRect($handle,[ref]$bounds)
-  $masks.Add([Windows.Rect]::new($bounds.Left,$bounds.Top,[Math]::Max(0,$bounds.Right-$bounds.Left),[Math]::Max(0,$bounds.Bottom-$bounds.Top)))
-  return @{text='';truncated=$false;masks=$masks;visited=1}
- }
- $root=[Windows.Automation.AutomationElement]::FromHandle($handle)
- $walker=[Windows.Automation.TreeWalker]::ControlViewWalker
- $q=[Collections.Generic.Queue[Windows.Automation.AutomationElement]]::new();$q.Enqueue($root)
- $timer=[Diagnostics.Stopwatch]::StartNew()
+function Read-Elements($root,$walker,$cache,$timer,[int]$MaxNodes=250,[int]$MaxMilliseconds=1200){
+ $texts=[Collections.Generic.List[string]]::new();$unique=[Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal);$masks=[Collections.Generic.List[object]]::new();$truncated=$false;$seen=0;$enqueued=0;$navigation=0;$peakQueue=0;$textLength=0
+ $q=[Collections.Generic.Queue[object]]::new();$q.Enqueue($root);$enqueued=1;$peakQueue=1
  while($q.Count -gt 0){
-  if($seen -ge 250 -or $timer.ElapsedMilliseconds -gt 1200){$truncated=$true;break}
+  if($seen -ge $MaxNodes -or $timer.ElapsedMilliseconds -ge $MaxMilliseconds){$truncated=$true;break}
   $el=$q.Dequeue();$seen++
   try{
-   $c=$el.Current
+   $c=$el.Cached
    if($c.IsPassword -or $c.ControlType.Id -eq [Windows.Automation.ControlType]::Edit.Id -or [WorkTraceNative]::IsEdit([IntPtr]$c.NativeWindowHandle)){$masks.Add($c.BoundingRectangle);continue}
    if(!$c.IsOffscreen -and $c.ControlType -ne [Windows.Automation.ControlType]::Window){
-    $v=$c.Name
-    if($v -and !$texts.Contains($v)){$texts.Add($v)}
+    $v=$el.Current.Name
+    if($v -and $unique.Add($v)){$texts.Add($v);$textLength+=$v.Length+1;if($textLength -gt 12000){$truncated=$true;break}}
    }
-   $child=$walker.GetFirstChild($el);$n=0
-   while($child -and $n -lt 250){$q.Enqueue($child);$child=$walker.GetNextSibling($child);$n++}
+   if($timer.ElapsedMilliseconds -ge $MaxMilliseconds){$truncated=$true;break}
+   if($enqueued -ge $MaxNodes){$truncated=$true;continue}
+   $child=$walker.GetFirstChild($el,$cache);$navigation++
+   while($child){
+    if($enqueued -ge $MaxNodes -or $timer.ElapsedMilliseconds -ge $MaxMilliseconds){$truncated=$true;break}
+    $q.Enqueue($child);$enqueued++;$peakQueue=[Math]::Max($peakQueue,$q.Count)
+    # The budget applies before every sibling IPC, not only to dequeued nodes.
+    if($enqueued -ge $MaxNodes -or $timer.ElapsedMilliseconds -ge $MaxMilliseconds){$truncated=$true;break}
+    $child=$walker.GetNextSibling($child,$cache);$navigation++
+   }
   }catch{$truncated=$true}
  }
  $text=($texts -join "`n");if($text.Length -gt 12000){$text=$text.Substring(0,12000);$truncated=$true}
- return @{text=$text;truncated=$truncated;masks=$masks;visited=$seen}
+ return @{text=$text;truncated=$truncated;masks=$masks;visited=$seen;enqueued=$enqueued;navigation_calls=$navigation;peak_queue=$peakQueue;elapsed_ms=$timer.ElapsedMilliseconds}
 }
+function Read-Window([IntPtr]$handle,[int]$MaxNodes=250,[int]$MaxMilliseconds=1200){
+ $timer=[Diagnostics.Stopwatch]::StartNew()
+ if([WorkTraceNative]::IsEdit($handle)){
+  $bounds=[WorkTraceNative+RECT]::new();[void][WorkTraceNative]::GetWindowRect($handle,[ref]$bounds);$masks=[Collections.Generic.List[object]]::new()
+  $masks.Add([Windows.Rect]::new($bounds.Left,$bounds.Top,[Math]::Max(0,$bounds.Right-$bounds.Left),[Math]::Max(0,$bounds.Bottom-$bounds.Top)))
+  return @{text='';truncated=$false;masks=$masks;visited=1;enqueued=1;navigation_calls=0;peak_queue=1;elapsed_ms=$timer.ElapsedMilliseconds}
+ }
+ # Fetch classification/bounds in one UIA cache request. Never prefetch Name or
+ # Value from password/edit controls; readable names are requested only after
+ # the same privacy checks used for the original traversal.
+ $cache=[Windows.Automation.CacheRequest]::new();$cache.TreeScope=[Windows.Automation.TreeScope]::Element
+ foreach($property in @([Windows.Automation.AutomationElement]::IsPasswordProperty,[Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.AutomationElement]::NativeWindowHandleProperty,[Windows.Automation.AutomationElement]::BoundingRectangleProperty,[Windows.Automation.AutomationElement]::IsOffscreenProperty)){$cache.Add($property)}
+ $root=[Windows.Automation.AutomationElement]::FromHandle($handle).GetUpdatedCache($cache)
+ return Read-Elements $root ([Windows.Automation.TreeWalker]::ControlViewWalker) $cache $timer $MaxNodes $MaxMilliseconds
+}
+function Test-CaptureSize([int]$Width,[int]$Height){return $Width -gt 0 -and $Height -gt 0 -and $Width -le 5000 -and $Height -le 5000 -and ([long]$Width*$Height) -le 10000000}
 if($SelfTest){
  $form=[Windows.Forms.Form]::new();$form.Text='WorkTrace fixture'
  $label=[Windows.Forms.Label]::new();$label.Text='fixture-visible-text';$label.AccessibleName='fixture-visible-text';$label.Width=200;$form.Controls.Add($label)
@@ -60,7 +78,16 @@ if($SelfTest){
  $secretEl=[Windows.Automation.AutomationElement]::FromHandle($secret.Handle)
  $passwordRead=Read-Window $secret.Handle
  $passed=(!$passwordRead.text.Contains($secret.Text)) -and ($passwordRead.masks.Count -gt 0) -and ($labelEl.Current.Name -eq 'fixture-visible-text')
- @{type='selftest';passed=$passed;password_not_collected=(!$passwordRead.text.Contains($secret.Text));password_control_skipped=($passwordRead.masks.Count -gt 0);visited=$r.visited;hidden_control_name=$labelEl.Current.Name} | ConvertTo-Json -Compress
+ # Exercise the actual bounded traversal against a synthetic 400-wide tree,
+ # without showing a window, obtaining foreground handles or capturing pixels.
+ $nodes=@();for($i=0;$i -le 400;$i++){$nodes+=[PSCustomObject]@{Index=$i;Cached=[PSCustomObject]@{IsPassword=$false;ControlType=[Windows.Automation.ControlType]::Text;NativeWindowHandle=0;BoundingRectangle=[Windows.Rect]::Empty;IsOffscreen=$false};Current=[PSCustomObject]@{Name='synthetic-node-'+$i}}}
+ $walker=[PSCustomObject]@{Nodes=$nodes;Slow=$false;Calls=0}
+ $walker|Add-Member ScriptMethod GetFirstChild {param($node,$cache)$this.Calls++;if($this.Slow){Start-Sleep -Milliseconds 10};if($node.Index -eq 0){return $this.Nodes[1]};return $null}
+ $walker|Add-Member ScriptMethod GetNextSibling {param($node,$cache)$this.Calls++;if($this.Slow){Start-Sleep -Milliseconds 10};if($node.Index -lt 400){return $this.Nodes[$node.Index+1]};return $null}
+ $bounded=Read-Elements $nodes[0] $walker $null ([Diagnostics.Stopwatch]::StartNew()) 40 1200
+ $walker.Slow=$true;$timed=Read-Elements $nodes[0] $walker $null ([Diagnostics.Stopwatch]::StartNew()) 250 30
+ $passed=$passed -and $bounded.enqueued -eq 40 -and $bounded.visited -eq 40 -and $bounded.navigation_calls -le 80 -and $bounded.truncated -and $timed.truncated -and $timed.navigation_calls -lt 20 -and !(Test-CaptureSize 5000 5000) -and (Test-CaptureSize 3840 2160)
+ @{type='selftest';passed=$passed;password_not_collected=(!$passwordRead.text.Contains($secret.Text));password_control_skipped=($passwordRead.masks.Count -gt 0);visited=$r.visited;hidden_control_name=$labelEl.Current.Name;wide_visited=$bounded.visited;wide_enqueued=$bounded.enqueued;wide_navigation_calls=$bounded.navigation_calls;wide_peak_queue=$bounded.peak_queue;wide_truncated=$bounded.truncated;wide_elapsed_ms=$bounded.elapsed_ms;timed_navigation_calls=$timed.navigation_calls;timed_truncated=$timed.truncated;max_bitmap_pixels=10000000;priority=[Diagnostics.Process]::GetCurrentProcess().PriorityClass.ToString()} | ConvertTo-Json -Compress
  $form.Dispose();if(!$passed){exit 1};exit 0
 }
 $cfg=Get-Content -LiteralPath $Policy -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -88,11 +115,12 @@ do{
      if($deep){
       try{
        $r=Read-Window $h;$capture.text=$r.text;$capture.truncated=$r.truncated;$capture.capture_status='uia'
+       if($r.truncated){$capture.reason='uia-incomplete-budget-or-provider'}
        if(!$r.text){$capture.capture_status='unavailable';$capture.reason='uia-no-readable-text'}
        if($cfg.screenshots -and !$r.truncated -and $r.visited -gt 1){
         $rect=[WorkTraceNative+RECT]::new();[void][WorkTraceNative]::GetWindowRect($h,[ref]$rect)
         $w=$rect.Right-$rect.Left;$height=$rect.Bottom-$rect.Top
-        if($w -gt 0 -and $height -gt 0 -and $w -le 5000 -and $height -le 5000){
+        if(Test-CaptureSize $w $height){
          $bmp=[Drawing.Bitmap]::new($w,$height);$g=[Drawing.Graphics]::FromImage($bmp)
          try{$dc=$g.GetHdc();try{$ok=[WorkTraceNative]::PrintWindow($h,$dc,2)}finally{$g.ReleaseHdc($dc)}
           if($ok){
@@ -101,7 +129,7 @@ do{
            try{$thumb.Save($ms,[Drawing.Imaging.ImageFormat]::Jpeg);if($ms.Length -le 2097152){$capture.image=[Convert]::ToBase64String($ms.ToArray())}}finally{$ms.Dispose();$thumb.Dispose()}
           }
          }finally{$g.Dispose();$bmp.Dispose()}
-        }
+        }else{$capture.reason='screenshot-pixel-budget';$capture.truncated=$true}
        }
       }catch{$capture.capture_status='unavailable';$capture.reason='uia-read-failed'}
      }

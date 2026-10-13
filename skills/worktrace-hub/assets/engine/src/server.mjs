@@ -49,6 +49,9 @@ export async function startApp({dir=process.env.WORKTRACE_DATA||join(root,'data'
    if(u.pathname==='/health'){json(res,200,{service:'worktrace',version:SOFTWARE_VERSION});return;}
    if(!u.pathname.startsWith('/api/')){const names={'/':'index.html','/app.js':'app.js','/style.css':'style.css'};const f=names[u.pathname];if(!f){json(res,404,{error:'不存在'});return;}res.writeHead(200,{'Content-Type':f.endsWith('.js')?'text/javascript; charset=utf-8':f.endsWith('.css')?'text/css; charset=utf-8':'text/html; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; img-src 'self' blob:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"});res.end(readFileSync(join(root,'public',f)));return;}
    assert(safeEqual(req.headers.authorization,'Bearer '+token),'管理授权失效，请从启动程序重新打开面板');if(req.headers.origin)assert(req.headers.origin===`http://127.0.0.1:${server.address().port}`||req.headers.origin===`http://localhost:${server.address().port}`,'拒绝跨来源请求');
+   // The visible tray polls frequently and only needs live flags. Keep this
+   // path independent of history counts, JSON parsing, job queues and blobs.
+   if(req.method==='GET'&&u.pathname==='/api/status/brief'){json(res,200,{configured:!!config,role:config?.role||null,version:SOFTWARE_VERSION,collection:{enabled:!!collector?.enabled,state:collector?.state||'未启用采集',last_sample:collector?.lastSample||null},worker:{busy:!!worker?.busy},files:{busy:!!fileCollector?.busy}});return;}
    if(req.method==='GET'&&u.pathname==='/api/status'){json(res,200,status());return;}
    if(req.method==='GET'&&u.pathname==='/api/knowledge/search'){
     assert(config,'请先配置角色');const q=Object.fromEntries(u.searchParams);

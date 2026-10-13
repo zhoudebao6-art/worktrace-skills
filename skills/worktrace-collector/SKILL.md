@@ -7,9 +7,9 @@ description: 在已告知员工的固定工作电脑上部署和维护 WorkTrace
 
 部署与维护使用本技能 `scripts/control.ps1`。先 `-Action start`，再 `-Action status`。已配置时核对员工和设备编号，不重复初始化或更换身份。详细参数见 [references/operations.md](references/operations.md)。只需导入用户已有的 ActivityWatch/Screenpipe 导出时，按 [references/external-records.md](references/external-records.md) 在对应的已部署分控预览、导入，保持采集暂停状态；不为导入另建总控或安装上游采集器。
 
-先从 status 核对 connection_mode。联网首次接入使用管理员交给此电脑的专属 .enroll.json，通过文件路径传给脚本；不要把密钥贴进对话。尚无部署绑定且用户要求独立离线时，从核验后的 v0.4.0 或兼容后续完整发布源码目录运行 scripts/Initialize-OfflineNode.ps1 -IdentityFile <身份.json> -WorkDir <独立运行目录>；身份文件 format=worktrace.offline-identity/1.0，包含 org_name、employee_id、employee_name、label，可选统一 org_id。具体下载和验收见[离线部署手册](https://github.com/zhoudebao6-art/worktrace-skills/blob/v0.4.0/docs/offline-collector.md)。不要用 hub 初始化或伪造 enrollment 代替离线入口。
+先从 status 核对 connection_mode。联网首次接入使用管理员交给此电脑的专属 .enroll.json，通过文件路径传给脚本；不要把密钥贴进对话。尚无部署绑定且用户要求独立离线时，从核验后的 v0.4.1 或兼容后续完整发布源码目录运行 scripts/Initialize-OfflineNode.ps1 -IdentityFile <身份.json> -WorkDir <独立运行目录>；身份文件 format=worktrace.offline-identity/1.0，包含 org_name、employee_id、employee_name、label，可选统一 org_id。具体下载和验收见[离线部署手册](https://github.com/zhoudebao6-art/worktrace-skills/blob/v0.4.1/docs/offline-collector.md)。不要用 hub 初始化或伪造 enrollment 代替离线入口。
 
-首次部署默认记录和自动学习均未启用，身份变化必须拒绝；重试沿用原 org_id、device_id、installation_id、stream_id 与暂停状态。多台离线电脑属于同一公司时沿用同一个 org_id，不能拷贝其他电脑的 data。已有版本或模式转换先保留配置与数据库，不能覆盖升级。公司已统一告知时沿用部署授权，不要求员工每一步确认。
+首次部署默认记录和自动学习均未启用，身份变化必须拒绝；重试沿用原 org_id、device_id、installation_id、stream_id 与暂停状态。多台离线电脑属于同一公司时沿用同一个 org_id，不能拷贝其他电脑的 data。已有版本禁止直接初始化覆盖；卡顿诊断或原路径升级按 [references/performance.md](references/performance.md) 先核验来源、空闲停机、完整冷备再更新，核对实际运行版本与原证据。模式转换另作迁移，不与性能升级混用。公司已统一告知时沿用部署授权，不要求员工每一步确认。
 
 用户要求完成部署并运行记录时，按公司提供的工作时段和应用范围配置，然后启动。未提供细分策略时用程序默认：工作日 09:00–18:00、15 秒采样、所有应用活动、正文和截图关闭；清楚报告这个范围，不声称能读到完整客户沟通。要学习回复内容，需要按实际软件进程配置正文，并按需要启用截图。
 

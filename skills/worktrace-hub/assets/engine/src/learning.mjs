@@ -9,6 +9,8 @@ function init(s){s.db.exec(`
  CREATE INDEX IF NOT EXISTS learning_requests_device ON learning_requests(device_id,state);
 `);if(!s.db.prepare('PRAGMA table_info(personal_batches)').all().some(x=>x.name==='coverage_json'))s.db.exec('ALTER TABLE personal_batches ADD COLUMN coverage_json TEXT');}
 const event=(s,eid)=>{const r=s.db.prepare('SELECT json FROM events WHERE event_id=?').get(eid);return r?JSON.parse(r.json):null;};
+// Schema preparation must not implicitly count all historical evidence.
+export {init as initLearning};
 const raw=e=>e.event_type!=='learning.summary';
 const preview=e=>({event_id:e.event_id,event_type:e.event_type,occurred_at:e.occurred_at,task_id:e.payload.task_id||null,case_id:e.context.case_id,app:e.app.process_name,preview:(e.payload.text||e.payload.content_text||e.payload.input_summary||'').slice(0,240),attachments:e.attachments,...(e.provenance?{provenance:e.provenance}:{})});
 function selectEvidence(s,c,limit,initial){

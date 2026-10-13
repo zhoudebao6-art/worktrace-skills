@@ -7,7 +7,7 @@ import {execFileSync} from 'node:child_process';
 const mirror='skills/worktrace-hub/assets/engine';
 const manifestPath=mirror+'/engine-manifest.json';
 const sourceDirectories=['src','bridge','public','skills/worktrace-collector','skills/worktrace-evidence','skills/worktrace-personal'];
-const sourceFiles=['Start.ps1','Tray.ps1','Install-Skills.ps1','连接Codex.ps1','设置登录启动.ps1','runtime/NODE-LICENSE.txt','scripts/provision-common.ps1','scripts/Ensure-Runtime.ps1','scripts/Configure-Learning.ps1','scripts/Join-Node.ps1','scripts/Initialize-OfflineNode.ps1','scripts/Offline-Handoff.ps1','scripts/skill-control.ps1'];
+const sourceFiles=['Start.ps1','Tray.ps1','Install-Skills.ps1','连接Codex.ps1','设置登录启动.ps1','runtime/NODE-LICENSE.txt','scripts/provision-common.ps1','scripts/Ensure-Runtime.ps1','scripts/Configure-Learning.ps1','scripts/Join-Node.ps1','scripts/Initialize-OfflineNode.ps1','scripts/Offline-Handoff.ps1','scripts/Measure-CollectorPerformance.ps1','scripts/skill-control.ps1'];
 const requiredFiles=['src/server.mjs','bridge/observe.ps1','public/index.html',...sourceFiles,...['hub','collector','evidence','personal'].map(role=>`skills/worktrace-${role}/SKILL.md`)];
 const sha256=bytes=>createHash('sha256').update(bytes).digest('hex');
 const sourcePath=path=>sourceFiles.includes(path)||sourceDirectories.some(dir=>path.startsWith(dir+'/'));

@@ -2,7 +2,7 @@ import {join} from 'node:path';
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {assert,uuid,canonical,hash,keys} from './protocol.mjs';
 import {inSchedule} from './collector.mjs';
-import {nextPersonal,savePersonal,learningStatus} from './learning.mjs';
+import {nextPersonal,savePersonal,learningStatus,initLearning} from './learning.mjs';
 import {personalResultSchema} from './learning-schema.mjs';
 import {personalDigest} from './personal-digest.mjs';
 import {job,nextJob,transitionJob,recoverJobs,enqueueJob,enqueueLocalJob} from './jobs.mjs';
@@ -16,7 +16,7 @@ const analysisSchema={type:'object',additionalProperties:false,required:['summar
 const dayKey=(p,date)=>{const v=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:p.timezone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date).map(x=>[x.type,x.value]));return `${v.year}-${v.month}-${v.day}`;};
 const localMessage='整理新增工作证据，核实个人操作方法、判断依据、原稿修改和结果；化学式、数值、单位和条件须回到原件，不确定处保留缺口。';
 const workPredicate="e.event_type<>'learning.summary' AND e.event_type NOT LIKE 'collector.%'";
-function initLocal(s,c){learningStatus(s,c);s.db.exec(`CREATE TABLE IF NOT EXISTS worker_local_attempts(job_id TEXT NOT NULL,batch_id TEXT NOT NULL,state TEXT NOT NULL,started_at TEXT NOT NULL,finished_at TEXT,reason TEXT,PRIMARY KEY(job_id,batch_id));CREATE INDEX IF NOT EXISTS worker_local_attempts_batch ON worker_local_attempts(batch_id);`);}
+function initLocal(s,c){initLearning(s);s.db.exec(`CREATE TABLE IF NOT EXISTS worker_local_attempts(job_id TEXT NOT NULL,batch_id TEXT NOT NULL,state TEXT NOT NULL,started_at TEXT NOT NULL,finished_at TEXT,reason TEXT,PRIMARY KEY(job_id,batch_id));CREATE INDEX IF NOT EXISTS worker_local_attempts_batch ON worker_local_attempts(batch_id);`);}
 export class LearningWorker{
  constructor({store,config,dir,runner=runCodex,clock=()=>new Date()}){Object.assign(this,{store,config,dir,runner,clock});this.busy=false;this.controller=null;this.activeJob=null;this.stopped=false;this.lastError='';if(config.role==='collector')recoverJobs(store,{device_id:config.device_id});if(this.offline){initLocal(store,config);store.db.prepare("UPDATE worker_local_attempts SET state='interrupted',finished_at=?,reason='worker_restarted_result_uncertain' WHERE state='started'").run(this.now().toISOString());}const interrupted=store.get('worker_active_call');if(interrupted){store.set('worker_interrupted',interrupted);store.set('worker_active_call',null);}}
  get offline(){return this.config.role==='collector'&&this.config.connection_mode==='offline';}
@@ -37,9 +37,13 @@ export class LearningWorker{
   return {mode:'offline_daily',day,idempotency_key,max_batches:3,batch_limit:50,pending_raw_events:pending,open_batch_id:open?.batch_id||null,has_new_work:pending>0||openWork,checkpoint_requires_explicit_retry:!!attempted,checkpoint_attempt:attempted||null,daily_job:current||null,remainder:'每日只建立一个最多三批的本地任务；积压保留到次日或暂停后手动复盘。',failure_policy:'已尝试但未完成的批次不自动重复调用；暂停自动学习后明确重试或手动完成检查点。'};
  }
  scheduleLocal(){
-  const state=this.localState();
+  const day=dayKey(this.policy,this.now()),dailyKey='local-nightly:'+this.localIdentity()+':'+day;
   // A queued prior-day job must not run alongside a fresh daily allowance.
-  for(const row of this.store.db.prepare("SELECT job_id FROM node_jobs WHERE source='local' AND device_id=? AND state='queued' AND json_extract(spec_json,'$.local_trigger')='daily' AND json_extract(spec_json,'$.schedule_day')<>?").all(this.config.device_id,state.day))transitionJob(this.store,row.job_id,'blocked',{reason:'offline_day_elapsed',retry:'new work remains available to the current daily task'});
+  for(const row of this.store.db.prepare("SELECT job_id FROM node_jobs WHERE source='local' AND device_id=? AND state='queued' AND json_extract(spec_json,'$.local_trigger')='daily' AND json_extract(spec_json,'$.schedule_day')<>?").all(this.config.device_id,day))transitionJob(this.store,row.job_id,'blocked',{reason:'offline_day_elapsed',retry:'new work remains available to the current daily task'});
+  // Once today's bounded task exists, another five-second tick cannot create
+  // more work; do not repeatedly count the entire evidence history to find out.
+  if(this.store.db.prepare("SELECT 1 FROM node_jobs WHERE source='local' AND idempotency_key=?").get(dailyKey))return null;
+  const state=this.localState();
   if(!state.has_new_work||state.checkpoint_requires_explicit_retry||state.daily_job)return null;
   return enqueueLocalJob(this.store,{device_id:this.config.device_id,idempotency_key:state.idempotency_key,local_trigger:'daily',schedule_day:state.day,message:localMessage,max_batches:3,limit:50},this.now());
  }
