@@ -1,0 +1,211 @@
+{
+  "format": "worktrace.source/1.0",
+  "version": "0.2.0",
+  "files": [
+    {
+      "path": "Install-Skills.ps1",
+      "sha256": "af76f37978816640484be354960928005f5afe3c1cbbd2589b5ed8848740ae02",
+      "size": 1994
+    },
+    {
+      "path": "Start.ps1",
+      "sha256": "ed33446c4b5cc733e4c7f94ba64f6d3c0d66365df52bf7420ec5a82603862cb6",
+      "size": 2733
+    },
+    {
+      "path": "Tray.ps1",
+      "sha256": "096557a1450a209142f9bd6411da4cc2658c3db6b763c3b62c99017a5b64d42a",
+      "size": 1826
+    },
+    {
+      "path": "bridge/certificate.ps1",
+      "sha256": "bdb2fb5daefa2ccfbb803419bddc5a62e89f056cda2f56e983993a564f4584b2",
+      "size": 1644
+    },
+    {
+      "path": "bridge/observe.ps1",
+      "sha256": "2f4ae7863e43a2018a2d158c3cbdef9768f283c02a09488b56b81c21e600fb13",
+      "size": 7980
+    },
+    {
+      "path": "public/app.js",
+      "sha256": "8f0cb684de85f4d7af893460fefa67db516ea88f356a8aafe509b23405c8dd6f",
+      "size": 14589
+    },
+    {
+      "path": "public/index.html",
+      "sha256": "f83a120c6b99daf7d7f423eb223f4727572ca2ee4b5f89c650aa8215bd8bf60c",
+      "size": 9163
+    },
+    {
+      "path": "public/style.css",
+      "sha256": "577b205e0b471d7ba50ce949244a722728e886b98b02aa7420dc9efedcb7f707",
+      "size": 4984
+    },
+    {
+      "path": "runtime/NODE-LICENSE.txt",
+      "sha256": "8cc9bb466b19fc7e7cc99d03e9df1132021fda8b01eea2624c58bb372dbef576",
+      "size": 148217
+    },
+    {
+      "path": "scripts/Configure-Learning.ps1",
+      "sha256": "3b0ae3d5ae38321e48e314c5b7eabb00632b1474e59e81ec2a96b3eeb1728127",
+      "size": 2903
+    },
+    {
+      "path": "scripts/Ensure-Runtime.ps1",
+      "sha256": "44a9468ac1719967e9affc3d1d007900347da3065e254ddd6e90e44ef745f787",
+      "size": 1864
+    },
+    {
+      "path": "scripts/Join-Node.ps1",
+      "sha256": "4242a3dedb5b0d8fc144f5aacc30af027de67bb8553c0262c16e4dc7a49f08a8",
+      "size": 3430
+    },
+    {
+      "path": "scripts/provision-common.ps1",
+      "sha256": "083e269b5914d1b4f3d945e9b57b97382c142432855156f33e8ba292d0eccd5c",
+      "size": 1890
+    },
+    {
+      "path": "scripts/skill-control.ps1",
+      "sha256": "6bb4a04caa33331af1e685a3a9471553bb25b790f87b6b4df97110803f3900c6",
+      "size": 1748
+    },
+    {
+      "path": "skills/worktrace-collector/SKILL.md",
+      "sha256": "e76d7aa71a8560d4bbb557c7b55b24d9dc99133c4f26f970baee4fac7180ff9d",
+      "size": 2948
+    },
+    {
+      "path": "skills/worktrace-collector/agents/openai.yaml",
+      "sha256": "ca5b28d4cd038e12739eb45798500179807791e9bb2c74d3a4b59ef8f117f4ae",
+      "size": 269
+    },
+    {
+      "path": "skills/worktrace-collector/references/operations.md",
+      "sha256": "4427ae083c5ad0cc8dc77a36ce912ade8d84a9d3d1b5510ba77d9a90af65f5e3",
+      "size": 2091
+    },
+    {
+      "path": "skills/worktrace-collector/scripts/control.ps1",
+      "sha256": "6bb4a04caa33331af1e685a3a9471553bb25b790f87b6b4df97110803f3900c6",
+      "size": 1748
+    },
+    {
+      "path": "skills/worktrace-evidence/SKILL.md",
+      "sha256": "0f15b145343527b08e4c9529205593c0b06a4d25d401c5e0511a445a10dfed12",
+      "size": 2624
+    },
+    {
+      "path": "skills/worktrace-personal/SKILL.md",
+      "sha256": "d3af4c9cdd1544f07303696f966f05c47d32f354b0d41c7f3121e73d14cf6762",
+      "size": 3358
+    },
+    {
+      "path": "skills/worktrace-personal/agents/openai.yaml",
+      "sha256": "88c804744e37e488330d93e2a62da3243b3c2c855b2a60ae49abae50046c713b",
+      "size": 316
+    },
+    {
+      "path": "skills/worktrace-personal/references/learning-loop.md",
+      "sha256": "5e8d6f43349d1805d578251bd2bcd36504cc9df7614cf1f7e013b0ba5529c117",
+      "size": 1985
+    },
+    {
+      "path": "src/admin-cli.mjs",
+      "sha256": "d5e822552ee5c68ce0d2e03617111a6f9831193322f76ab5b215b7abd58a77fb",
+      "size": 2989
+    },
+    {
+      "path": "src/analysis.mjs",
+      "sha256": "84eb9f23c54b6e86b3b6ac53d9360d01c8dbf39b24bad9b96ab7cbd1281b977a",
+      "size": 5681
+    },
+    {
+      "path": "src/candidates.mjs",
+      "sha256": "42b76c594c9f0ffd67dc4cf3af4ef6e036b26af516c66aeac1c4578019471b7b",
+      "size": 3493
+    },
+    {
+      "path": "src/codex-runner.mjs",
+      "sha256": "880a9665dab861efe0ddae758a5cbe377118a60bfd17630b140ad302231da600",
+      "size": 3962
+    },
+    {
+      "path": "src/collector.mjs",
+      "sha256": "cb658b3214ed636e54aad4eb90d2bdb7daa9a78cdce51fa077c6a135aac4b1fa",
+      "size": 6266
+    },
+    {
+      "path": "src/jobs.mjs",
+      "sha256": "f33bd1a70f696b32196da0a0b6371ada0bf583a971c9b208f0a09c40c2d74a47",
+      "size": 8008
+    },
+    {
+      "path": "src/learning-schema.mjs",
+      "sha256": "409786cbacdbd6c87f56c8a940165af0f2d8fe488e58d02235de08248e0cb259",
+      "size": 4165
+    },
+    {
+      "path": "src/learning.mjs",
+      "sha256": "12b1086637548a1e67253cbf07c76d9688aba76599c96ba0014195924cd8b926",
+      "size": 12969
+    },
+    {
+      "path": "src/local-api.mjs",
+      "sha256": "6f3c930dced0a7e7250abf2ee3379732c0d7b0b347e5a254f7b9ba6da76a9fed",
+      "size": 864
+    },
+    {
+      "path": "src/mcp.mjs",
+      "sha256": "ec8f093400476c3d70a033f4af5453f58c9f1b547f47860f21fd404b91c28773",
+      "size": 13403
+    },
+    {
+      "path": "src/messages.mjs",
+      "sha256": "9c567a7940a416f389e30ba200a90836d581fcbadae77817fbd9e54871a13c02",
+      "size": 2466
+    },
+    {
+      "path": "src/protocol.mjs",
+      "sha256": "96af91ae831ed308c2616815d31dd13b79cdc10ad9cae57ea50d504e22d79eee",
+      "size": 8409
+    },
+    {
+      "path": "src/report.mjs",
+      "sha256": "021811b1a91dfe88d3c01f154f75a28a83a2f8725fc11c4504c9d81f8a26b570",
+      "size": 2615
+    },
+    {
+      "path": "src/server.mjs",
+      "sha256": "1e3532f883e0f77abede407bf04948a64fc299f3c8a7669130029ed698e69c06",
+      "size": 20083
+    },
+    {
+      "path": "src/store.mjs",
+      "sha256": "cd5c74a647059aacd9b190c63f955cd32de60384b950f293d5c5a198ab12babd",
+      "size": 10338
+    },
+    {
+      "path": "src/work.mjs",
+      "sha256": "6b134fa927be07c3878d14b558a751c3fb7d5b7f7e92c27afc1f87ac713459e2",
+      "size": 3470
+    },
+    {
+      "path": "src/worker.mjs",
+      "sha256": "03940049954b218523976a5ecc022c6e6fb5803a3ee55dcf27454b5d1e6b40be",
+      "size": 11845
+    },
+    {
+      "path": "设置登录启动.ps1",
+      "sha256": "1f275a570a0823733c5b8d96cb07177b9905c84feaa2688051e6fa8c6d619755",
+      "size": 815
+    },
+    {
+      "path": "连接Codex.ps1",
+      "sha256": "4d6cf605f49fedffc8541fc263abc71b5ec4e923fa67017e3f21958bd332129a",
+      "size": 1306
+    }
+  ]
+}

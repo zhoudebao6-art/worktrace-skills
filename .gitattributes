@@ -1,0 +1,2 @@
+# Source manifest hashes include exact bytes, including PowerShell UTF-8 BOM.
+* -text

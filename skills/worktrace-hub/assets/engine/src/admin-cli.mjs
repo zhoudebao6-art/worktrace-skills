@@ -1,0 +1,41 @@
+import {readFileSync,writeFileSync,existsSync,mkdirSync} from 'node:fs';
+import {resolve,dirname,join} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {localApi} from './local-api.mjs';
+const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
+export async function admin({command,role,dir=join(root,'data'),input,output}){
+ if(!['hub','collector'].includes(role))throw Error('需要明确本机角色 hub 或 collector');
+ const data=input?JSON.parse(readFileSync(input,'utf8').replace(/^\uFEFF/,'')):{};
+ const status=await localApi(dir,'status');if(status.configured&&status.role!==role)throw Error('已配置角色与 Skill 角色不一致，不能覆盖初始化');
+ if(command==='status')return status;
+ if(command==='shutdown')return localApi(dir,'shutdown',{});
+ if(command==='init'){
+  if(status.configured)return {already_configured:true,...status};
+  return localApi(dir,'setup',role==='hub'?{...data,role:'hub'}:{role:'collector',enrollment:data});
+ }
+ if(!status.configured)throw Error('请先初始化本机');
+ if(command==='enroll'){
+  if(role!=='hub')throw Error('只有总控可以登记设备');
+  if(!output)throw Error('登记文件必须通过 --output 保存，不能打印密钥');
+  const dest=resolve(output);if(existsSync(dest))throw Error('目标文件已存在，不覆盖登记密钥');
+  mkdirSync(dirname(dest),{recursive:true});
+  const enrollment=await localApi(dir,'devices',data);writeFileSync(dest,JSON.stringify(enrollment,null,2),{flag:'wx',mode:0o600});
+  return {saved:dest,device_id:enrollment.device_id,employee_id:enrollment.employee_id};
+ }
+ if(command==='worker-configure')return localApi(dir,'worker/configure',data);
+ if(command==='worker-run')return localApi(dir,'worker/run',{});
+ if(command==='candidates')return localApi(dir,'candidates?'+new URLSearchParams(data));
+ if(command==='replies')return localApi(dir,'replies?'+new URLSearchParams(data));
+ if(command==='jobs')return localApi(dir,'jobs?'+new URLSearchParams(data));
+ if(command==='enqueue'){if(role!=='hub')throw Error('只有总控可下发任务');return localApi(dir,'jobs/enqueue',data);}
+ if(command==='report')return localApi(dir,'report?'+new URLSearchParams(data));
+ if(command==='policy'||command==='capture'||command==='sync'){
+  if(role!=='collector')throw Error('此命令仅用于分控');
+  const value=await localApi(dir,command,data);if(value.error)throw Error(value.error);return value;
+ }
+ throw Error('不支持的管理命令');
+}
+if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+ const opts={};try{for(let i=2;i<process.argv.length;i+=2){const key=process.argv[i];if(!['--command','--role','--dir','--input','--output'].includes(key)||!process.argv[i+1])throw Error('管理参数无效');opts[key.slice(2)]=process.argv[i+1];}
+  console.log(JSON.stringify(await admin(opts)));}catch(e){console.error(JSON.stringify({error:e.message}));process.exitCode=1;}
+}

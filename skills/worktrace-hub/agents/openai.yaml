@@ -1,0 +1,4 @@
+interface:
+  display_name: "WorkTrace 总控"
+  short_description: "部署公司汇总端，检查分控数据，基于证据整理岗位流程和候选技能"
+  default_prompt: "使用 $worktrace-hub 配置总控并检查员工工作记录的汇总情况。"

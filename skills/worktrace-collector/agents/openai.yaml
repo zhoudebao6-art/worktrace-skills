@@ -1,0 +1,4 @@
+interface:
+  display_name: "WorkTrace 分控"
+  short_description: "在已告知的员工电脑部署可暂停的工作记录，验证本地保存和总控同步"
+  default_prompt: "使用 $worktrace-collector 部署本机工作记录并验证同步到公司总控。"

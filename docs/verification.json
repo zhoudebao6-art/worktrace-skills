@@ -1,0 +1,80 @@
+{
+  "date": "2026-10-13",
+  "version": "0.2.0",
+  "node_tests": {
+    "passed": 27,
+    "failed": 0,
+    "source": "clean publication staging"
+  },
+  "mcp_tools": 23,
+  "skills_validated": 4,
+  "powershell_parse": "passed",
+  "provision": {
+    "repeated_join_preserves_manual_pause": true,
+    "failure": "",
+    "all_test_services_stopped": true,
+    "two_employee_directories_prepared": true,
+    "physical_remote_smb_not_tested": true,
+    "desktop_text_and_screenshots_disabled": true,
+    "mcp_registration_skipped_in_isolated_test": true,
+    "learning_config_script_role_model_and_pause": true,
+    "repeat_preparation_no_duplicate_devices": true,
+    "passed": true,
+    "portable_skill_bootstrap": true,
+    "mode": "one physical PC, three independently started service processes",
+    "runtime_not_required_in_git": true,
+    "real_activity_sample_delivered": true,
+    "both_employee_codex_join_scripts_completed": true
+  },
+  "browser": {
+    "kind": "isolated_verification",
+    "uses_real_employee_data": false,
+    "checks": [
+      "浏览器创建管理端及本地 HTTPS 证书",
+      "浏览器登记两台电脑并分别导入专属连接文件",
+      "学习模型及额度可见、面板暂停恢复独立于采集",
+      "本机 Windows 被动采样、时段设置、暂停；正文与截图均关闭",
+      "稿件回看、人工修改新版本、采用反馈及原因保存",
+      "中心时间线检索、跨设备汇总及真实 JPEG 附件回看",
+      "浏览器加密导出、导入校验及重复数据去重",
+      "桌面与窄屏布局无横向溢出",
+      "浏览器未捕获 JavaScript 运行错误"
+    ],
+    "central_events": 10,
+    "central_devices": 2,
+    "collection_stopped": true,
+    "passed": true
+  },
+  "real_model_loop": {
+    "passed": true,
+    "synthetic_only": true,
+    "physical_lan": false,
+    "real_models": true,
+    "tools_disabled": true,
+    "candidate_count": 1
+  },
+  "model_usage": {
+    "collector": {
+      "model": "gpt-6.1-sol",
+      "reasoning_effort": "high",
+      "usage": {
+        "input_tokens": 12213,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 1175,
+        "reasoning_output_tokens": 191
+      }
+    },
+    "hub": {
+      "model": "gpt-6-astra",
+      "reasoning_effort": "high",
+      "usage": {
+        "input_tokens": 12595,
+        "cached_input_tokens": 0,
+        "cache_write_input_tokens": 0,
+        "output_tokens": 916,
+        "reasoning_output_tokens": 82
+      }
+    }
+  }
+}
