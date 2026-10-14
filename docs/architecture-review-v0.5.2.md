@@ -39,9 +39,20 @@
 & .\runtime\node.exe --test tests/learning-coverage.test.mjs tests/optimization.test.mjs tests/offline-worker.test.mjs tests/performance.test.mjs
 ```
 
-队列/窗口恢复、运行锁/停机、readiness、同步与移交完整性分别由 `loop-resilience`、`runtime-lifecycle`、`readiness`、`sync-integrity`、`handoff-integrity` 测试覆盖。发布前还应完成合并后全量回归、镜像清单和正式包验证；此处不把定向回归写成整版或员工现场验收。
+队列/窗口恢复、运行锁/停机、readiness、同步与移交完整性分别由 `loop-resilience`、`runtime-lifecycle`、`readiness`、`sync-integrity`、`handoff-integrity` 测试覆盖。这些早期定向结果不累加为新的测试数量；最终联合验证见下节。
 
-合并后的定向验证另有 `runtime-lifecycle` **9/9** 与合并核心回归 **45/45** 通过；`sync-integrity` 包含四项同步/首次绑定事务场景。这些结果仍不等同于尚待完成的联合全套、发布包和员工现场验证，最终发布记录应单独给出其范围与结果。
+合并后的定向验证另有 `runtime-lifecycle` **9/9** 与合并核心回归 **45/45** 通过；`sync-integrity` 包含四项同步/首次绑定事务场景。这些定向用例也包含在下述联合全套中，不代表员工现场验收。
+
+## 本版发布前联合验证
+
+2026-10-14，冻结引擎含 63 个文件；本机 Node v22.23.2 / Windows 联合回归 **222/222 通过，0 失败、0 跳过**。覆盖移交损坏、检查点、恢复中断、首次配置失败、同步事务、排队/取消/预算、旧状态、来源安装和 LAN/邀请码/Connect。四个维护源技能格式、相关 PowerShell 代码段和文档相对链接已校验。
+
+- Windows PowerShell 5.1 联网部署通过：一台物理机上三个独立服务、两个合成员工身份，心跳与默认活动元数据到达，重复接入保留暂停，版本绑定一致；正文/截图关闭，未测试跨物理机 SMB。
+- PowerShell 5.1 离线部署通过：无总控、无 Git 发布清单场景，三个技能绑定、身份/暂停保留、冲突/篡改拒绝、移交输入参数验证；真实桌面采集未启用。
+- **公开 v0.4.1 ZIP → v0.5.2 原路径升级通过**：75 文件冷备逐项核验；4 原事件、2 原件 BLOB、1 合成图片、全部原 meta 和 8 类关联表内容保留；3 技能绑定和实际 API 为 0.5.2，原 open 批次、queued 任务、离线、high、暂停状态不变。独立 stdio MCP 的初始化、工具列表、状态、readiness、证据、批次和图片摘要读取通过；旧 v0.4.1 加密移交包可 Inspect。
+- **main v0.5.1（8a58cc0）→ v0.5.2 兼容升级通过**：65 文件冷备逐项核验，原配置/身份/stream、2 原事件、未完成批次、xhigh 与暂停保留。此项为程序级服务/API 验证，不单独声称验收了员工机技能安装、MCP 或登录启动。
+
+测试自建服务、托盘与 MCP 子进程均已退出。缓存使用 D 盘，原数据及冷备不作为缓存。未调用真实模型或发送客户消息；本轮没有执行故障后的全量冷备回退。并行测试期间的诊断耗时不可当作员工机性能对照，不据此宣称具体提速倍数。GitHub 上最终提交的 CI、专用 ZIP 与 SHA256 核验结果另在本版 Release 记录。
 
 ## 另一台 Codex 应如何使用
 
