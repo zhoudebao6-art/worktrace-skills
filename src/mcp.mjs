@@ -11,6 +11,7 @@ const string={type:'string'},taskId={type:'string',format:'uuid'};
 function schema(properties={},required=[]){return {type:'object',properties,required,additionalProperties:false};}
 const knowledgeScope={employee_id:{type:'string',maxLength:80},device_id:taskId,from:string,to:string};
 export const definitions=[
+ {name:'worktrace_readiness',description:'按需检查本机运行、存储与指定设备的证据和个人总结缺口。只读、不调用模型、不启动采集；总结存在不代表岗位已学会。总控结果分页，不用于频繁轮询。',inputSchema:schema({device_id:taskId,limit:{type:'integer',minimum:1,maximum:100},offset:{type:'integer',minimum:0}})},
  {name:'worktrace_candidate_revise',description:'总控把完善后的候选技能和有界loop登记为可追溯的新版本。必须提供当前定义摘要以防覆盖他人修改，保留旧定义和理由；清除旧通过，仍是草稿且不执行。单独改本地文件不会登记版本。',inputSchema:candidateRevisionSchema},
  {name:'worktrace_candidate_revisions',description:'总控读取候选修订历史。默认短摘要，include_definitions=true时最多三份旧/新定义。仅用于审阅，不自动安装。',inputSchema:schema({candidate_id:taskId,limit:{type:'integer',minimum:1,maximum:50},include_definitions:{type:'boolean'}},['candidate_id'])},
  {name:'worktrace_knowledge_search',description:'按明确员工、设备和至多31天范围分层检索个人方法、候选与可选原始短摘要。中文子串检索有扫描上限，使用返回游标继续；不是全库语义召回。模型旧结论仍为待核验资料。',inputSchema:schema({...knowledgeScope,query:{type:'string',maxLength:200},limit:{type:'integer',minimum:1,maximum:20},scan_limit:{type:'integer',minimum:1,maximum:1000},include_raw:{type:'boolean'},cursor:string},['employee_id','device_id','from','to'])},
@@ -45,6 +46,7 @@ export const definitions=[
 const api=(path,body)=>localApi(dataDir,path,body);
 async function task(id){const t=await api('tasks?task_id='+encodeURIComponent(id));if(!t)throw Error('任务不存在');return t;}
 async function call(name,a){if(!definitions.some(x=>x.name===name))throw Error('未知工具');if(name==='worktrace_status')return api('status');
+ if(name==='worktrace_readiness')return api('readiness?'+new URLSearchParams(a));
  if(name==='worktrace_knowledge_search')return api('knowledge/search?'+new URLSearchParams(a));
  if(name==='worktrace_knowledge_read')return api('knowledge/read?'+new URLSearchParams(a));
  if(name==='worktrace_candidate_evaluate')return api('candidates/evaluate',a);

@@ -3,11 +3,13 @@ name: worktrace-hub
 description: 由总控 Codex 从随技能源码搭建 WorkTrace 环境，准备员工分控接入、登记身份并验收同步；基于新增工作证据整理岗位流程和候选技能。用于无安装包的集中部署、巡检和岗位自动化准备。
 ---
 
-只有用户指定的另一台局域网电脑承担总控；开发/测试本机不是总控。读取或安装技能不会自动指定角色。部署动作在目标总控电脑的 Codex 中执行，先核对用户指定的设备和目录；员工电脑运行分控。持续接收数据由 WorkTrace 服务完成；Codex 按需配置、查询和分析，不需要保持对话轮询。安装 Codex 本身不会采集其他软件的操作。
+只有用户明确指定的电脑承担总控；开发/测试本机不是总控。联网分控使用局域网 HTTPS，独立离线分控可在其他网络记录数日后人工移交，不要求目前存在总控。读取或安装技能不会自动指定角色。部署动作在目标总控电脑的 Codex 中执行，先核对用户指定的设备和目录；员工电脑运行分控。持续接收数据由 WorkTrace 服务完成；Codex 按需配置、查询和分析，不需要保持对话轮询。安装 Codex 本身不会采集其他软件的操作。
 
 ## 部署与查询
 
 收到总控上线前建立的离线分控移交包时，先读 [references/offline-handoff.md](references/offline-handoff.md)。新总控须明确接纳原公司和设备编号再归并；不能重新随机建公司后重写旧事件解决身份不匹配。完整包可跨局域网人工带回，离线设备没有心跳是正常状态。
+
+接收验收分开检查原始事件/附件/文件原件、个人总结、未完成状态和来源。只有 raw 没有 learning.summary 时，默认 source=personal 无批次是正常缺口；暂停自动分析后按 offline-handoff.md 用 source=all、明确员工、有界手动审阅保存总控分析，不伪造员工总结，也不宣称自动生成了个人候选。总控只能查询已收到的内容；没有连接的离线节点不能收取补证或远程命令。
 
 不制作安装包，不让员工自己编写采集程序。技能内 `assets/engine` 是经过校验的服务源码；bootstrap 首次准备经官方 SHA256 校验的固定 Node 运行时；总控按脚本准备环境，不临时重造采集器。先读 [references/deployment.md](references/deployment.md)。
 
@@ -35,6 +37,10 @@ description: 由总控 Codex 从随技能源码搭建 WorkTrace 环境，准备�
 
 用户要求整理 skill/loop 时，读取 [references/candidate.md](references/candidate.md)。输出候选文件、引用证据和独立验收用例，先在离线样例上评估，不把员工个别习惯直接发布为公司规则。
 
+自动建立的候选仅复制个人总结中的方法，尚未自动吸收总控 findings 中的纠错。总控须先核对原文和自己的审阅结论，再用 candidate_revise 显式登记修订。持久化 loop 使用当前严格 schema；states/transitions/allowed_actions 等未来执行设计不能直接作为该 API 的字段提交。
+
 需要比较已有方法时，按 [references/knowledge.md](references/knowledge.md) 逐个员工、设备和日期检索；先看摘要和缺口，再取单条证据。外部来源记录须保留 provenance，元数据、可见文本与模型结论不能互相替代。候选评估用 `worktrace_candidate_evaluate` 保存独立案例记录，再查 `worktrace_candidate_evaluations`；只有可核对的记录能产生离线验收结果，结果不授予执行权限。
 
 结束巡检时报告新增发现、故障或待补资料。无变化不反复分析；不启动无限 codex exec、鼠标接管或微信回复。受控任务通道已提供 worktrace_enqueue_job/node_jobs/cancel_job；分控服务下次同步领取任务，本机执行器启用后调用 Codex。只有收到任务回执才能报告其执行状态。node.status/message 不调用模型，message 不代表员工已读。worktrace_node_replies 可看分控 AI 回复。总控保存分析后用 worktrace_candidates 查看自动建立的候选草稿，按 candidate.md 完善并验证；不自动发布。
+
+运行故障与升级先查 [references/operations.md](references/operations.md)，分别核对实际服务、磁盘引擎、技能绑定和 MCP 版本。其他岗位可沿用证据与学习规范；正式草稿任务目前只有两类，任意业务软件执行、岗位通用智能体和一键离线转联网均未提供。

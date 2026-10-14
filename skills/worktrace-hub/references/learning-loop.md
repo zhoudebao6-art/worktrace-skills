@@ -3,7 +3,7 @@
 本文件是首版运行边界，总控根据试点证据完善岗位步骤与验收案例。读取文件不会启动定时任务或远程操作。
 
 ## 分控先理解个人做法
-每位员工独立 SQLite 保存原始事件、任务、AI/人工改稿和 learning.summary。后者是 worktrace.personal/1.0：触发、输入、操作/判断/检查、结果、异常、改动、缺口、逐项证据。通过 HTTPS 原样汇入总控同一事件表，employee_id/device_id 保持可追溯。不能只提交一篇丢失来源的日记。
+每位员工独立 SQLite 保存原始事件、任务、AI/人工改稿和 learning.summary。后者是 worktrace.personal/1.0：触发、输入、操作/判断/检查、结果、异常、改动、缺口、逐项证据。联网通过 HTTPS、离线通过明确接纳身份后的 wthandoff 原样汇入总控同一事件表，employee_id/device_id 保持可追溯。不能只提交一篇丢失来源的日记。只有原始记录而没有个人总结时按 offline-handoff.md 的 raw/all 审阅路线处理，不把导入成功当作方法已整理。
 
 个人循环领取增量 → 核实原文 → 重建方法 → 反向检查可复现性 → 保存总结 → 结束/等新证据。结构校验不证明文字理解正确，遇到元数据或截图缺口必须降级说明。
 
@@ -22,9 +22,13 @@
 ## 如何由总控改 loop
 维护 candidates/<岗位>/<流程>/<版本>/loop.json、evidence.json、eval-cases.json、evaluation.json。每次更改注明触发证据、变更点、留出案例及失败处理；先生成新版本，不覆盖已验证版本。
 
-建议 loop 字段：version、trigger、required_inputs、states、transitions、max_iterations（默认 3）、max_images（默认 6）、stop_when、wait_for、allowed_actions、completion_evidence、failure_route、evidence_ids、evaluation_status（draft/failed/passed）。业务成功与“已生成草稿”必须用不同状态。
+数据库内 loop 严格使用 candidate.md 列出的 worktrace.loop-draft/1.0 字段；step 每项有 action/decision/check，claim 每项有 text/basis/evidence_event_ids，执行适配器保持 null。额外的状态转换图、wait_for、allowed_actions、完成证据和失败路线另存执行设计附录，不能直接提交给现有 API。业务成功与“已生成草稿”必须用不同状态。
 
-夜间调度使用部署目录 scripts/Configure-Learning.ps1 配置：总控 Enable + AutoDispatch，分控 Enable。总控固定 Astra/high、分控固定 6.1 Sol/high。默认工作日18:00–23:59、每台6次模型调用预留、每任务3批。每30秒同步取任务和传回执，5秒本地检查不消耗模型。没有新内容或仅活动元数据不调用模型。暂停入口在面板；手动学习前必须暂停自动模式。message 只确认送达服务，分控用 reply_to_hub 发送 AI 回复。失败保留批次，重启 running 变 interrupted，不盲目重跑付费调用。
+夜间调度使用部署目录 scripts/Configure-Learning.ps1 配置：总控 Enable + AutoDispatch，分控 Enable。总控固定 Astra/high、分控固定 6.1 Sol/high。默认工作日18:00–23:59、每台6次模型调用预留、每任务3批。联网模式每30秒同步取任务和传回执，5秒本地检查不消耗模型；离线模式只创建本地每日任务，不与总控通信。没有新内容或仅活动元数据不调用模型。暂停入口在面板；手动学习前必须暂停自动模式。message 只确认送达服务，分控用 reply_to_hub 发送 AI 回复。
+
+总控失败批次和预算耗尽批次保留检查点，每批每天最多一次自动尝试，最早下一本地自然日允许窗口再试；未尝试批次优先，未尝试之间仍按到达顺序。状态 worker.hub_schedule 显示近期未完成尝试和下一可重试日期。失败批次不再挡住其他批次，但总控每日预算共享，并非按员工平均分配额度，也不保证所有员工当夜完成。离线分控失败仍需显式 worker-retry-local，不能套用总控的跨日自动重试规则。重启后 running 变 interrupted，先查结果和检查点，避免重复付费。
+
+改变实际学习设置、离开允许时段或停止运行时，当前自动调用的迟到结果不保存，已经预留的调用次数不退回；重复提交相同设置不取消任务。联网下行任务按设备持久分页轮转，未来任务和暂停任务不再挡住后来的消息；未确认/取消的回执保留重投，消息内容不是操作授权。
 
 当前自动总控按单份个人总结分析并抽查最多六条原始证据，保存后建立带来源的个人候选草稿。跨员工比较、主动提出补证、完善通用岗位规则与留出评估仍由本技能按以上步骤完成，不能声称后台已经自动完成所有组织知识治理。全局跨员工模型并发控制暂未实现；先一总控两分控试点。
 

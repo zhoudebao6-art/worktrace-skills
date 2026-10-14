@@ -6,7 +6,7 @@
 
 ## 其他电脑下载使用
 
-本仓库已公开，包含总控、分控采集、个人总结和证据四个技能及配套服务源码。其他电脑无需 GitHub 登录，直接从 [发布页](https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.4.1) 下载 `worktrace-skills-v0.4.1.zip` 和 `SHA256SUMS.txt`，核验后解压源码，例如到 `D:\WorkTraceSource`：
+本仓库已公开，包含总控、分控采集、个人总结和证据四个技能及配套服务源码。其他电脑无需 GitHub 登录，直接从 [发布页](https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.5.0) 下载 `worktrace-skills-v0.5.0.zip` 和 `SHA256SUMS.txt`，核验后解压源码，例如到 `D:\WorkTraceSource`：
 
 ```powershell
 Set-Location D:\WorkTraceSource
@@ -19,9 +19,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\Install-SharedSkil
 
 这是源码分发，不是安装包；总控技能继续负责正式环境搭建。完整下载步骤见 [下载使用手册](docs/download.md)。也可以匿名克隆本仓库后安装。专用发布 ZIP 带有离线安装清单，GitHub 自动生成的 Source code ZIP 不能直接替代它。
 
-**让另一台电脑的 Codex 自己读取：** [化工案件员工独立离线分控完整指令](prompts/chemical-offline-collector.txt)（[纯文本地址](https://raw.githubusercontent.com/zhoudebao6-art/worktrace-skills/main/prompts/chemical-offline-collector.txt)）。v0.4.1 已包含无需总控的首次建档、本地有界学习、文档版本取证和完整加密移交；目标电脑直接部署发布版，无需现场开发。见 [离线分控操作手册](docs/offline-collector.md)。
+**让另一台电脑的 Codex 自己读取：** [化工案件员工独立离线分控完整指令](prompts/chemical-offline-collector.txt)（[纯文本地址](https://raw.githubusercontent.com/zhoudebao6-art/worktrace-skills/main/prompts/chemical-offline-collector.txt)）。v0.5.0 已包含无需总控的首次建档、本地有界学习、文档版本取证和完整加密移交；目标电脑直接部署发布版，无需现场开发。见 [离线分控操作手册](docs/offline-collector.md)。
 
-v0.4.1 优化白天记录时的文件读取、托盘轮询和界面采集负载。已有员工分控按[性能诊断与升级说明](docs/collector-performance.md)及[升级指令](prompts/upgrade-collector-performance.txt)更新实际运行服务；只更新 Skill 不会使旧服务获得优化。离线能力的原验证记录见 [v0.4.0 报告](docs/validation-v0.4.md)。历史 v0.3.0 的六项目研究与优化见 [研究报告](docs/research-and-optimization.md)。旧发布保留；公开仓库只保存通用源码、说明和合成测试，不保存公司工作数据。
+v0.5.0 在已有白天性能优化之上，补齐重复启动防护、停机排空、同步原子处理、任务失败恢复、个人总结取样与完整移交逻辑核验。已有电脑必须更新运行服务和对应 Skill；更新清单、冷备、验收及回退见 [v0.5.0 更新说明](docs/upgrade-v0.5.md)，整体结构与故障检查见 [复查报告](docs/architecture-review-v0.5.md)。[最新升级 Codex 指令](prompts/upgrade-worktrace-v0.5.txt) 可直接交给员工电脑使用。公开仓库只保存通用源码、说明和合成测试，不保存公司工作数据。
+
+历史验证记录：[v0.4.1 性能优化](docs/collector-performance.md)、[v0.4.0 离线验证](docs/validation-v0.4.md)、[v0.3.0 六项目研究](docs/research-and-optimization.md)。旧发布保留。
 
 ## 为什么这样做
 

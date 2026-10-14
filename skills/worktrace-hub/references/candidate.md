@@ -6,7 +6,11 @@
 - SKILL.md：用途和触发、必要输入、软件/接口、实际流程、完成条件、失败/等待退出条件。使用普通 Agent Skills frontmatter。
 - evidence.json：引用的 event_id、task_id、覆盖员工与日期；逐项标注“观察到”“推断”“需要补证”，不复制整天敏感内容。
 - eval-cases.json：用于验证的真实脱敏案例或明确标记的合成案例；把提炼规则的案例和验收案例分开，避免拿同一份示范当质量证据。
-- loop.json：trigger、inputs、states、max_iterations、stop_when、wait_for、allowed_actions、completion_evidence、failure_route。默认最多三次有目标修订，缺输入进入等待，无外发权限时只产草稿。
+- loop.json：当前可登记的 worktrace.loop-draft/1.0，仅含 format、status、trigger、inputs、steps、outcome、exceptions、stop_conditions、max_iterations、max_model_calls、execution_adapter、held_out_evaluation、source_event_id。默认最多三轮/三次调用；不是可执行状态机。
+
+自动初稿直接来自分控 procedures，没有自动合并总控 findings 中的否定或修正。完善前必须复读对应 analysis_batch_id 的总控审阅和原始证据，对不成立的方法保留明确反例/缺口；不要仅因数据库有候选就展示为已纠正的方法。用下面的正式修订入口保存完善结果，仍保持 draft。
+
+需要设计 states、transitions、wait_for、allowed_actions、completion_evidence、failure_route 时，另存 design-notes.md 或 execution-design.json，注明“尚未接入执行器的设计”。这些不是当前 loop schema 的字段，直接传给 candidate_revise 会被拒绝。不得把设计文件的动作清单当作已获执行权限或已有适配器。
 
 客服可先提炼：询问案件进度 → 查询已提供事实 → 缺项登记 → 回复草稿 → 对照人工改稿 → 验收。未知进度必须待查，不补造报价、授权期限或已办结状态。
 
@@ -22,7 +26,7 @@ WorkTrace 0.3 提供 `worktrace_candidate_evaluate` 和 `worktrace_candidate_eva
 
 1. 总控读取候选取得 candidate_id 与 definition_sha256；由候选所属员工的分控，按随包的 worktrace-evidence 技能为 normal、missing_input、counterexample 分别登记独立 task_id 和 case_id。总控不直接创建分控工作事件，也不通过学习消息要求分控绕过角色限制。不能与提炼批次共享任务、案件或事件，不要只换编号复制同一材料。
 2. 在生成待测输出之前，实际提供参考的人在该分控登记一个 human/review 稿件，其 content_text 为下面的 JSON。AI 不得自行制造人工参考或 user_confirmed 反馈。参考不要传给待测生成过程。
-3. 分控保存独立生成的 ai 稿件和实际核验反馈，经既有 HTTPS 或 wpack 同步后，总控先核对原始事件已到达，再调用评估工具传入各类 task_id、input_event_ids、reference_event_id、output_event_id、feedback_event_id；idempotency_key 标识本次评估，重复调用不覆盖。脱网时保留待同步，不在总控冒充员工补写。
+3. 分控保存独立生成的 ai 稿件和实际核验反馈，经既有 HTTPS、wpack 或完整 wthandoff 移交后，总控先核对原始事件已到达，再调用评估工具传入各类 task_id、input_event_ids、reference_event_id、output_event_id、feedback_event_id；idempotency_key 标识本次评估，重复调用不覆盖。原分控不可用或没有真实人工参考时，保持评估缺口，不在总控冒充员工补写。
 
 ```json
 {"format":"worktrace.candidate-reference/1.0","candidate_id":"<候选UUID>","candidate_hash":"<definition_sha256>","kind":"missing_input","expected_behavior":"request_input","input_event_ids":["<输入事件UUID>"],"expected_text":"<人工事先指定的精确参考文本>"}

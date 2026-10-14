@@ -5,9 +5,9 @@ description: 在已告知员工的固定工作电脑上部署和维护 WorkTrace
 
 本机只保存本员工证据。联网模式向总控补传；connection_mode=offline 时本地保存，等待人工交接，不需要总控地址、证书或登记密钥。采集由本地服务持续运行，Codex 负责部署、故障诊断和调用 worktrace-personal 做个人方法学习；关闭 Codex 对话不影响已启动服务。不可把单个 Skill 文件说成常驻监控程序。
 
-部署与维护使用本技能 `scripts/control.ps1`。先 `-Action start`，再 `-Action status`。已配置时核对员工和设备编号，不重复初始化或更换身份。详细参数见 [references/operations.md](references/operations.md)。只需导入用户已有的 ActivityWatch/Screenpipe 导出时，按 [references/external-records.md](references/external-records.md) 在对应的已部署分控预览、导入，保持采集暂停状态；不为导入另建总控或安装上游采集器。
+部署与维护使用本技能 `scripts/control.ps1`。先读 deployment.json 确认原目录和身份，优先只读 `-Action status`；用户要求运行且已确认本目录没有另一实例时才 `-Action start`。已配置时不重复初始化或更换身份。详细参数与故障路径见 [references/operations.md](references/operations.md)。只需导入用户已有的 ActivityWatch/Screenpipe 导出时，按 [references/external-records.md](references/external-records.md) 在对应的已部署分控预览、导入，保持采集暂停状态；不为导入另建总控或安装上游采集器。
 
-先从 status 核对 connection_mode。联网首次接入使用管理员交给此电脑的专属 .enroll.json，通过文件路径传给脚本；不要把密钥贴进对话。尚无部署绑定且用户要求独立离线时，从核验后的 v0.4.1 或兼容后续完整发布源码目录运行 scripts/Initialize-OfflineNode.ps1 -IdentityFile <身份.json> -WorkDir <独立运行目录>；身份文件 format=worktrace.offline-identity/1.0，包含 org_name、employee_id、employee_name、label，可选统一 org_id。具体下载和验收见[离线部署手册](https://github.com/zhoudebao6-art/worktrace-skills/blob/v0.4.1/docs/offline-collector.md)。不要用 hub 初始化或伪造 enrollment 代替离线入口。
+先从 status 核对 connection_mode。联网首次接入使用管理员交给此电脑的专属 .enroll.json，通过文件路径传给脚本；不要把密钥贴进对话。尚无部署绑定且用户要求独立离线时，从核验后的 v0.5.0 或兼容后续完整发布源码目录运行 scripts/Initialize-OfflineNode.ps1 -IdentityFile <身份.json> -WorkDir <独立运行目录>；身份文件 format=worktrace.offline-identity/1.0，包含 org_name、employee_id、employee_name、label，可选统一 org_id。具体下载和验收见[离线部署手册](https://github.com/zhoudebao6-art/worktrace-skills/blob/v0.5.0/docs/offline-collector.md)。不要用 hub 初始化或伪造 enrollment 代替离线入口。
 
 首次部署默认记录和自动学习均未启用，身份变化必须拒绝；重试沿用原 org_id、device_id、installation_id、stream_id 与暂停状态。多台离线电脑属于同一公司时沿用同一个 org_id，不能拷贝其他电脑的 data。已有版本禁止直接初始化覆盖；卡顿诊断或原路径升级按 [references/performance.md](references/performance.md) 先核验来源、空闲停机、完整冷备再更新，核对实际运行版本与原证据。模式转换另作迁移，不与性能升级混用。公司已统一告知时沿用部署授权，不要求员工每一步确认。
 
@@ -21,6 +21,10 @@ description: 在已告知员工的固定工作电脑上部署和维护 WorkTrace
 
 日常复盘使用随部署提供的 worktrace-personal；总结本人的具体操作方法、判断依据、人工改动和证据缺口，写入规范化事件。联网首次接入验证一条总结实际到达总控；离线验证本地日任务和总结落库，再安排下班有界学习。离线采集不依赖网络，Codex 模型调用仍需要本机登录与网络。安装技能本身不会自动启用学习。
 
+分别报告实际服务 API 版本、原运行目录的引擎清单版本、三技能 deployment.json 版本及 MCP 初始化返回版本。只改技能文件不会更新已运行的服务或 MCP 子进程。升级更新范围、停机冷备和故障检查见 [references/operations.md](references/operations.md)；不能拿新版文字代替旧进程的实际状态。
+
 允许的资料目录可以配置保存版本取证；先核对明确目录、扩展名和大小预算，禁止用磁盘根目录代替范围。文件正文解析不完整时保留缺口，原件哈希或“打开了文件”不证明业务办结。交接使用离线手册的导出与备份入口；原始数据留在本机直到接收核验完成，不把复制的 data 当作另一台活跃分控启动。
+
+数日离线试点移交前，分别核验原始记录、可读内容/原件、个人总结数量与覆盖、剩余批次和失败检查点。没有总结也可完整保存移交，但须标明“原始证据待分析”；总控导入不会自动冒充原员工生成个人总结。原机还能运行时先按授权手动补做有界复盘；不能运行时由总控只读 raw/all 审阅并保留缺口。
 
 最终说明身份、采集范围、是否运行、实际本地保存/同步结果和尚未验证的软件；离线明确“尚未连接总控”。保持服务运行或暂停状态符合用户任务，不在每次工作记录后要求员工填写操作说明。

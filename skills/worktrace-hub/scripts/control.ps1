@@ -1,5 +1,5 @@
 ﻿param(
- [Parameter(Mandatory=$true)][ValidateSet('start','status','init','enroll','policy','capture','sync','report','worker-configure','worker-run','jobs','replies','candidates','enqueue','shutdown')][string]$Action,
+ [Parameter(Mandatory=$true)][ValidateSet('start','status','readiness','init','enroll','policy','capture','sync','report','worker-configure','worker-run','jobs','replies','candidates','enqueue','shutdown')][string]$Action,
  [string]$InputFile,[string]$OutputFile
 )
 $ErrorActionPreference='Stop'

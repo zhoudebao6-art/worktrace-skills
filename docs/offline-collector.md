@@ -1,6 +1,6 @@
 # 无总控的离线分控部署
 
-v0.4.1 提供正式离线分控入口，不需要员工电脑修改源码。这里“离线”指尚未连接公司总控；本地记录与数据库不依赖总控，Codex 学习仍需该电脑自己的账号、可用额度和模型网络。当前电脑必须是被指定的员工电脑，不能把开发电脑当总控或员工机。
+v0.5.0 提供正式离线分控入口，不需要员工电脑修改源码。这里“离线”指尚未连接公司总控；本地记录与数据库不依赖总控，Codex 学习仍需该电脑自己的账号、可用额度和模型网络。当前电脑必须是被指定的员工电脑，不能把开发电脑当总控或员工机。
 
 ## 1. 一次核对身份与范围
 
@@ -21,25 +21,25 @@ v0.4.1 提供正式离线分控入口，不需要员工电脑修改源码。这�
 
 ## 2. 下载并部署
 
-从公开的 [v0.4.1 Release](https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.4.1) 下载专用 `worktrace-skills-v0.4.1.zip` 与 `SHA256SUMS.txt`，无需 GitHub 登录。也可由公司转发同一原包。GitHub 自动生成的 Source code ZIP 没有完整发布清单，不能代替专用资产。
+从公开的 [v0.5.0 Release](https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.5.0) 下载专用 `worktrace-skills-v0.5.0.zip` 与 `SHA256SUMS.txt`，无需 GitHub 登录。也可由公司转发同一原包。GitHub 自动生成的 Source code ZIP 没有完整发布清单，不能代替专用资产。
 
 例如在一个新下载目录执行：
 
 ```powershell
-$release = 'https://github.com/zhoudebao6-art/worktrace-skills/releases/download/v0.4.1'
-curl.exe -L --fail "$release/worktrace-skills-v0.4.1.zip" -o '.\worktrace-skills-v0.4.1.zip'
+$release = 'https://github.com/zhoudebao6-art/worktrace-skills/releases/download/v0.5.0'
+curl.exe -L --fail "$release/worktrace-skills-v0.5.0.zip" -o '.\worktrace-skills-v0.5.0.zip'
 if ($LASTEXITCODE -ne 0) { throw 'ZIP 下载失败。' }
 curl.exe -L --fail "$release/SHA256SUMS.txt" -o '.\SHA256SUMS.txt'
 if ($LASTEXITCODE -ne 0) { throw '校验文件下载失败。' }
 $rows = @(Get-Content -LiteralPath '.\SHA256SUMS.txt' | Where-Object { $_ -match '^[a-fA-F0-9]{64}\s+\*?worktrace-skills-v0\.4\.1\.zip$' })
 if ($rows.Count -ne 1) { throw '未找到唯一的发布 ZIP 校验项。' }
-$stream = [IO.File]::OpenRead((Join-Path (Get-Location) 'worktrace-skills-v0.4.1.zip'))
+$stream = [IO.File]::OpenRead((Join-Path (Get-Location) 'worktrace-skills-v0.5.0.zip'))
 $sha = [Security.Cryptography.SHA256]::Create()
 try { $actual = [BitConverter]::ToString($sha.ComputeHash($stream)).Replace('-', '').ToLowerInvariant() }
 finally { $stream.Dispose(); $sha.Dispose() }
 if ($actual -ne ($rows[0] -split '\s+')[0].ToLowerInvariant()) { throw 'ZIP 校验失败。' }
 if (Test-Path -LiteralPath 'D:\WorkTraceChemSource') { throw '源码目录已存在，请检查或选新目录。' }
-Expand-Archive -LiteralPath '.\worktrace-skills-v0.4.1.zip' -DestinationPath 'D:\WorkTraceChemSource'
+Expand-Archive -LiteralPath '.\worktrace-skills-v0.5.0.zip' -DestinationPath 'D:\WorkTraceChemSource'
 ```
 
 解压后根目录应直接含 scripts、skills、.worktrace-source.json。阅读 AGENTS.md，再在 `D:\WorkTraceChemAdmin\identity.json` 保存以下 JSON，将所有示例内容换成真实值；已有公司编号时增加 org_id：
@@ -146,4 +146,4 @@ Restore 目标必须全新，它只用于审阅，不能作为活跃分控启动
 
 给员工电脑 Codex 的直接入口：
 
-> 读取并按 https://raw.githubusercontent.com/zhoudebao6-art/worktrace-skills/v0.4.1/prompts/chemical-offline-collector.txt 部署本机独立离线分控。仅使用该公开发布的 v0.4.1 专用包，先核验身份、范围和已有部署；不要把本机当总控。
+> 读取并按 https://raw.githubusercontent.com/zhoudebao6-art/worktrace-skills/v0.5.0/prompts/chemical-offline-collector.txt 部署本机独立离线分控。仅使用该公开发布的 v0.5.0 专用包，先核验身份、范围和已有部署；不要把本机当总控。
