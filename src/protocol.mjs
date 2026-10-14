@@ -3,7 +3,7 @@ import { gzipSync, gunzipSync } from 'node:zlib';
 import {validatePersonalPayload} from './learning-schema.mjs';
 export const VERSION='1.0';
 export const EXTERNAL_VERSION='1.1';
-export const SOFTWARE_VERSION='0.5.0';
+export const SOFTWARE_VERSION='0.5.2';
 export const MAX_ASSET=2*1024*1024, MAX_BATCH=50, MAX_ARCHIVE=100*1024*1024;
 export const uuid=()=>randomUUID();
 export const hash=b=>createHash('sha256').update(b).digest('hex');

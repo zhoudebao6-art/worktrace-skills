@@ -15,7 +15,7 @@ function fixture(t){
   t.after(()=>{assert(resolve(workspace).startsWith(temp+sep));rmSync(workspace,{recursive:true,force:true});});
   const git=(...args)=>execFileSync(process.env.WORKTRACE_GIT||'git',['-C',root,...args],{encoding:'utf8',windowsHide:true,stdio:['ignore','pipe','pipe']});
   const put=(path,bytes)=>{mkdirSync(dirname(join(root,path)),{recursive:true});writeFileSync(join(root,path),bytes);};
-  const source=['src/server.mjs','bridge/observe.ps1','public/index.html','Start.ps1','Tray.ps1','Install-Skills.ps1','连接Codex.ps1','设置登录启动.ps1','runtime/NODE-LICENSE.txt','scripts/provision-common.ps1','scripts/Ensure-Runtime.ps1','scripts/Configure-Learning.ps1','scripts/Join-Node.ps1','scripts/Initialize-OfflineNode.ps1','scripts/Offline-Handoff.ps1','scripts/Measure-CollectorPerformance.ps1','scripts/skill-control.ps1'];
+  const source=['src/server.mjs','bridge/observe.ps1','public/index.html','Start.ps1','Tray.ps1','Install-Skills.ps1','连接Codex.ps1','设置登录启动.ps1','runtime/NODE-LICENSE.txt','scripts/provision-common.ps1','scripts/Ensure-Runtime.ps1','scripts/Configure-Learning.ps1','scripts/Join-Node.ps1','scripts/Connect-Node.ps1','scripts/Join-WithInvite.ps1','scripts/Join-Lan.ps1','scripts/Initialize-OfflineNode.ps1','scripts/Offline-Handoff.ps1','scripts/Measure-CollectorPerformance.ps1','scripts/skill-control.ps1'];
   for(const path of source)put(path,'synthetic source\n');
   for(const role of ['hub','collector','evidence','personal']){const path=`skills/worktrace-${role}/SKILL.md`;put(path,`---\nname: worktrace-${role}\ndescription: Synthetic export test.\n---\n`);if(role!=='hub')source.push(path);}
   const files=source.map(path=>{const bytes=readFileSync(join(root,path));put(mirror+'/'+path,bytes);return {path,sha256:sha(bytes),size:bytes.length};});
@@ -39,6 +39,14 @@ test('未提交、未跟踪和暂存改动均在创建导出目录前拒绝',t=>
 test('Git 忽略检查标记不能掩盖 HEAD 字节差异，已提交的错误镜像也拒绝',t=>{
   const hidden=fixture(t);hidden.git('update-index','--assume-unchanged','src/server.mjs');hidden.put('src/server.mjs','hidden local change');assert.equal(hidden.git('status','--porcelain=v1'),'');assert.throws(()=>exportSource(hidden),/do not match HEAD/);assert(!existsSync(hidden.output));
   const drift=fixture(t);drift.put('src/server.mjs','committed but mirror not refreshed');drift.commit();assert.throws(()=>exportSource(drift),/Source verification failed/);assert(!existsSync(drift.output));
+});
+
+test('已提交的私有接入码和改名重试凭据在建立发布目录前拒绝且不回显',t=>{
+  for(const [name,key] of [['employee.invite.json','invite_token'],['renamed-document.txt','request_secret'],['setup/lan-enrollment/note.txt','device_token']]){
+    const f=fixture(t),credential='V'.repeat(43);f.put(name,JSON.stringify({[key]:credential}));f.commit();
+    let failure;try{exportSource(f);}catch(error){failure=error;}
+    assert(failure);assert.match(failure.message,/Source verification failed/);assert(!failure.message.includes(credential));assert(!existsSync(f.output));
+  }
 });
 
 test('拒绝已有输出、源码内输出、链接路径和 Git 符号链接条目',t=>{

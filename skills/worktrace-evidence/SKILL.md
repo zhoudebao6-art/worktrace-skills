@@ -3,7 +3,7 @@ name: worktrace-evidence
 description: 使用 WorkTrace MCP 整理员工工作证据、执行客服进度跟进草稿或撰写初稿质检任务，并保存 AI 与人工修改版本。适用于用户要求记录或复盘这些任务；不用于后台监控、自动发消息或直接修改案件系统。
 ---
 
-先调用 worktrace_status，确认员工身份和本机角色。管理端用于汇总查询；草稿任务在员工端建立。
+任何任务先读取本技能的 `deployment.json`，员工端同时核对同目录 worktrace-collector、worktrace-personal 的绑定，以唯一的 role/root 调用 worktrace_status 确认身份。已有联网分控的服务或 MCP 不可用时，从已核验源码运行 `scripts/Connect-Node.ps1 -WorkDir <原目录> -SkillsDirectory <原技能目录>`，或用 collector 的 control start/status/sync；保留身份、信任及采集/学习开关，不因重启、断网或新对话再次索要链接或登记。离线只恢复本地服务，不询问总控链接。绑定缺损或冲突先恢复原配置或明确原目录，不扫描磁盘/局域网；只有首次没有任何本机状态才转 collector 收集连接与身份。管理端沿用 hub 绑定与 control，用于汇总查询；草稿任务在员工端建立。
 
 同时核对 connection_mode、实际服务版本与本 Skill 的 deployment.json；离线本地保存有效，但没有总控连接就不等待网络回执。若 MCP 返回旧版本或不存在新工具，先重连该 WorkTrace MCP 并核对服务，不把更新 Skill 当作服务升级。
 

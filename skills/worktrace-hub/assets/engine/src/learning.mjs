@@ -12,17 +12,24 @@ const event=(s,eid)=>{const r=s.db.prepare('SELECT json FROM events WHERE event_
 // Schema preparation must not implicitly count all historical evidence.
 export {init as initLearning};
 const raw=e=>e.event_type!=='learning.summary';
-const preview=e=>({event_id:e.event_id,event_type:e.event_type,occurred_at:e.occurred_at,task_id:e.payload.task_id||null,case_id:e.context.case_id,app:e.app.process_name,preview:(e.payload.text||e.payload.content_text||e.payload.input_summary||'').slice(0,240),attachments:e.attachments,...(e.provenance?{provenance:e.provenance}:{})});
+const preview=e=>({event_id:e.event_id,event_type:e.event_type,occurred_at:e.occurred_at,task_id:e.payload.task_id||null,case_id:e.context.case_id,app:e.app.process_name,window_title:e.app.window_title||'',preview:(e.payload.text||e.payload.content_text||e.payload.input_summary||'').slice(0,240),attachments:e.attachments,...(e.provenance?{provenance:e.provenance}:{})});
 function selectEvidence(s,c,limit,initial){
  const refs=[...initial],members=[],groups=new Map();let selected=0;
- const rows=s.db.prepare("SELECT e.json FROM events e LEFT JOIN personal_members m ON m.event_id=e.event_id WHERE m.event_id IS NULL AND e.event_type<>'learning.summary' AND e.device_id=? ORDER BY e.rowid LIMIT 1000").all(c.device_id);
- for(const row of rows){const e=JSON.parse(row.json);
-  const metadata=e.event_type==='activity.snapshot'&&!e.payload.text&&!e.app.window_title&&!e.attachments.length;
-  const key=metadata?canonical([e.occurred_at.slice(0,13),e.app.process_name,e.payload.capture_status]):null;
-  if(key&&groups.has(key)){const g=groups.get(key);g.count++;g.to=e.occurred_at;members.push(e.event_id);continue;}
-  if(selected>=limit||refs.length>=100)break;
+ // Read bounded selection fields, not 1,000 complete document/draft bodies.
+ const scanLimit=1000;
+ const window=s.db.prepare("SELECT e.event_id,e.event_type,e.occurred_at,json_extract(e.json,'$.app.process_name') app,json_extract(e.json,'$.app.window_title') window_title,json_extract(e.json,'$.payload.capture_status') capture_status,json_array_length(e.json,'$.attachments') attachments,CASE WHEN length(coalesce(json_extract(e.json,'$.payload.text'),''))>0 OR length(coalesce(json_extract(e.json,'$.payload.content_text'),''))>0 OR length(coalesce(json_extract(e.json,'$.payload.input_summary'),''))>0 THEN 1 ELSE 0 END has_content FROM events e LEFT JOIN personal_members m ON m.event_id=e.event_id WHERE m.event_id IS NULL AND e.event_type<>'learning.summary' AND e.org_id=? AND e.employee_id=? AND e.device_id=? ORDER BY e.rowid LIMIT ?").all(c.org_id,c.employee_id,c.device_id,scanLimit+1);
+ const priority=e=>e.has_content||e.attachments||e.event_type==='document.version'||e.event_type.startsWith('task.')||e.event_type.startsWith('artifact.')?0:e.event_type==='activity.snapshot'?1:2;
+ const rows=window.slice(0,scanLimit).sort((a,b)=>priority(a)-priority(b));
+ for(const e of rows){
+  const metadata=e.event_type==='activity.snapshot'&&!e.has_content&&!e.attachments;
+  // Titles can distinguish cases or documents. Only identical titles may group.
+  const key=metadata?canonical([e.occurred_at.slice(0,13),e.app,e.capture_status,e.window_title||'']):null;
+  if(key&&groups.has(key)){const g=groups.get(key);g.count++;if(e.occurred_at<g.from)g.from=e.occurred_at;if(e.occurred_at>g.to)g.to=e.occurred_at;members.push(e.event_id);continue;}
+  // Continue scanning to include later duplicates of already selected groups.
+  // Unselected groups and content retain their unassigned state.
+  if(selected>=limit||refs.length>=100)continue;
   if(!refs.includes(e.event_id))refs.push(e.event_id);members.push(e.event_id);selected++;
-  if(key)groups.set(key,{app:e.app.process_name||'(none)',status:e.payload.capture_status,count:1,evidence_event_id:e.event_id,from:e.occurred_at,to:e.occurred_at});
+  if(key)groups.set(key,{app:e.app||'(none)',status:e.capture_status,count:1,evidence_event_id:e.event_id,from:e.occurred_at,to:e.occurred_at});
  }
  const representative=refs.length;
  // Include prior saved file version for grounded change analysis, without consuming it again.
@@ -31,7 +38,7 @@ const taskIds=new Set(refs.map(x=>event(s,x)?.payload.task_id).filter(Boolean));
  // Task origin, parent versions and feedback may precede this batch. Add context,
  // without marking that context newly analysed or silently consuming later work.
  for(const tid of taskIds){const origin=s.db.prepare("SELECT event_id FROM events WHERE device_id=? AND json_extract(json,'$.payload.task_id')=? AND event_type='task.created' ORDER BY rowid LIMIT 1").all(c.device_id,tid);const parents=refs.map(x=>event(s,x)?.payload.parent_event_id).filter(Boolean).map(event_id=>({event_id}));const recent=s.db.prepare("SELECT event_id FROM events WHERE device_id=? AND json_extract(json,'$.payload.task_id')=? ORDER BY rowid DESC LIMIT 20").all(c.device_id,tid);for(const r of [...origin,...parents,...recent])if(refs.length<120&&!refs.includes(r.event_id))refs.push(r.event_id);}
- return {refs,members,coverage:{new_events:members.length,representative_events:representative,context_events:refs.length-representative,metadata_groups:[...groups.values()]}};
+ return {refs,members,coverage:{new_events:members.length,representative_events:representative,context_events:refs.length-representative,metadata_groups:[...groups.values()]},selection:{format:'worktrace.selection/1.0',scan_limit:scanLimit,scanned:rows.length,selected_new_events:members.length,unselected_in_window:rows.length-members.length,has_more_beyond_window:window.length>scanLimit,content_or_business_in_window:rows.filter(e=>priority(e)===0).length,order:'content_file_business_first_within_oldest_window',limitation:'仅对最早的有界窗口排序；窗口外内容未检查。相同小时/应用/状态/完整标题的无正文活动按代表片段引用，原事件未删除；计数不是工时。'}};
 }
 export function checkLearningRelations(s,e){
  if(e.event_type!=='learning.summary')return;
@@ -51,13 +58,13 @@ export function nextPersonal(s,c,{limit=50}={}){
  let b=s.db.prepare("SELECT * FROM personal_batches WHERE status='open' ORDER BY rowid LIMIT 1").get();
  if(!b){
   const request=s.db.prepare("SELECT * FROM learning_requests WHERE state='open' ORDER BY rowid LIMIT 1").get();
-  const {refs,members,coverage}=selectEvidence(s,c,limit,request?event(s,request.source_event_id)?.payload.evidence_event_ids||[]:[]);
+  const {refs,members,coverage,selection}=selectEvidence(s,c,limit,request?event(s,request.source_event_id)?.payload.evidence_event_ids||[]:[]);
   if(!refs.length)return {batch:null,stop_reason:'no_new_evidence'};
   b={batch_id:uuid(),digest:hash(canonical({coverage,events:refs.map(x=>({event_id:x,hash:s.db.prepare('SELECT hash FROM events WHERE event_id=?').get(x).hash}))})),refs_json:JSON.stringify(refs),request_id:request?.request_id||null,status:'open',result_event_id:null,coverage_json:JSON.stringify(coverage)};
-  s.db.exec('BEGIN IMMEDIATE');try{s.db.prepare('INSERT INTO personal_batches VALUES(?,?,?,?,?,?,?)').run(...Object.values(b));for(const eid of members)s.db.prepare('INSERT OR IGNORE INTO personal_members VALUES(?,?)').run(eid,b.batch_id);s.db.exec('COMMIT');}catch(e){s.db.exec('ROLLBACK');throw e;}
+  s.db.exec('BEGIN IMMEDIATE');try{s.db.prepare('INSERT INTO personal_batches VALUES(?,?,?,?,?,?,?)').run(...Object.values(b));for(const eid of members)s.db.prepare('INSERT OR IGNORE INTO personal_members VALUES(?,?)').run(eid,b.batch_id);s.set('personal_selection:'+b.batch_id,selection);s.db.exec('COMMIT');}catch(e){s.db.exec('ROLLBACK');throw e;}
  }
  const req=b.request_id?s.db.prepare('SELECT * FROM learning_requests WHERE request_id=?').get(b.request_id):null;
- return {batch:{batch_id:b.batch_id,digest:b.digest,employee_id:c.employee_id,source_coverage:b.coverage_json?JSON.parse(b.coverage_json):null,request:req?{request_id:req.request_id,source_event_id:req.source_event_id,questions:JSON.parse(req.questions_json)}:null,events:JSON.parse(b.refs_json).map(x=>preview(event(s,x)))},note:'重复无正文活动按小时/应用聚合，只代表采样数；正文/附件不合并。任务上下文有界补入；超出范围仍须标未知。最多三批，无新证据停止。'};
+ return {batch:{batch_id:b.batch_id,digest:b.digest,employee_id:c.employee_id,source_coverage:b.coverage_json?JSON.parse(b.coverage_json):null,selection:s.get('personal_selection:'+b.batch_id)||null,request:req?{request_id:req.request_id,source_event_id:req.source_event_id,questions:JSON.parse(req.questions_json)}:null,events:JSON.parse(b.refs_json).map(x=>preview(event(s,x)))},note:'最早1000条窗口内优先正文/文件/业务证据；重复无正文活动仅在小时/应用/状态/完整标题相同才聚合，不合并不同标题、正文或附件。未选内容仍待处理，旧批次selection可能为空；计数不是工时或全天覆盖。最多三批，无新证据停止。'};
 }
 export function savePersonal(s,c,p){
  assert(c.role==='collector','个人学习只能在分控保存');init(s);

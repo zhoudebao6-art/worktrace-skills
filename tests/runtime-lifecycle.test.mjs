@@ -5,6 +5,7 @@ import {resolve,join,sep} from 'node:path';
 import {spawn} from 'node:child_process';
 import {once} from 'node:events';
 import {pathToFileURL} from 'node:url';
+import {createServer} from 'node:net';
 import {startApp} from '../src/server.mjs';
 import {acquireRuntimeLock,acquireIdentityLock,RuntimeTasks} from '../src/runtime-lifecycle.mjs';
 import {uuid} from '../src/protocol.mjs';
@@ -40,6 +41,14 @@ test('failed first config write rolls back new enrollment, releases identity, an
  assert.equal(a.store.devices().length,0);assert(!existsSync(join(a.dir,'config.json')));assert.equal(a.config,null);
  rmdirSync(blocker);await api(a,'setup',{role:'collector',offline:identity});assert.equal(a.store.devices().length,1);assert.equal(a.config.role,'collector');
 });
+test('failed hub config write closes its TLS listener and leaves a retryable local service',async t=>{
+ const f=fixture(t),a=await startApp({dir:join(f.dir,'hub'),port:0});f.apps.push(a);const blocker=join(a.dir,'config.json.tmp');mkdirSync(blocker);
+ const listener=createServer();await new Promise(resolve=>listener.listen(0,'127.0.0.1',resolve));const port=listener.address().port;await new Promise(resolve=>listener.close(resolve));
+ const input={role:'hub',org_name:'SYNTHETIC',address:'127.0.0.1',hub_port:port};await assert.rejects(()=>api(a,'setup',input),/EISDIR|EPERM|EACCES/);
+ assert.equal(a.config,null);assert.equal(a.store.devices().length,0);assert.equal((await api(a,'status')).configured,false);
+ await new Promise((resolve,reject)=>{listener.once('error',reject);listener.listen(port,'127.0.0.1',resolve);});await new Promise(resolve=>listener.close(resolve));
+ rmdirSync(blocker);await api(a,'setup',input);assert.equal(a.config.role,'hub');assert(existsSync(join(a.dir,'config.json')));
+});
 test('OS releases both identity and directory ownership after an abrupt process exit',async t=>{
  const f=fixture(t),dir=join(f.dir,'child');mkdirSync(dir);const c={org_id:uuid(),device_id:uuid()},moduleUrl=pathToFileURL(resolve('src/runtime-lifecycle.mjs')).href;
  const child=spawn(process.execPath,['--input-type=module','-e',`import {acquireRuntimeLock,acquireIdentityLock} from ${JSON.stringify(moduleUrl)};const owned=[acquireRuntimeLock(process.argv[1]),await acquireIdentityLock(JSON.parse(process.argv[2]))];process.stdout.write('ready');setInterval(()=>{if(owned.length!==2)process.exit(9);},1000);`,dir,JSON.stringify(c)],{windowsHide:true,stdio:['ignore','pipe','pipe']});
@@ -57,4 +66,3 @@ test('shutdown aborts sync and waits for a late transport without advancing its 
  const syncing=a.synchronize();await entered.promise;let closed=false;const closing=a.close().then(()=>{closed=true;});await Promise.resolve();assert(signal.aborted);assert.equal(closed,false);assert.equal(a.store.stats().events,1);assert.equal(a.store.get('sync_cursor'),null);gate.resolve();assert.equal((await syncing).error,'service_stopping');await closing;
  const b=await startApp({dir:a.dir,port:0});f.apps.push(b);assert.equal(b.store.get('sync_cursor'),null);assert.equal(b.store.stats().events,1);
 });
-

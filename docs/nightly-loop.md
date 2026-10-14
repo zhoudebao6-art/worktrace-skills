@@ -1,8 +1,10 @@
 # 联网与独立离线节点的夜间学习
 
+此处描述本次源码修订的配置。旧发布包和既有运行服务不会自动升级；分控需使用公司提供的更新源码副本并核对实际 worker.policy。只更新技能文字不会改变已经运行的执行器。
+
 ## 模型与运行条件
 
-按用户要求，自动任务固定为：总控 `gpt-6-astra` + `high`，分控 `gpt-6.1-sol` + `high`。参数直接传给每次 `codex exec`，不依赖聊天窗口中上一次选择，也不静默换成其他模型。交互式使用 Skill 时，在对应 Codex 对话选择相同模型与高推理强度；Skill 文字本身不能切换已开始的对话模型。
+角色模型固定为总控 `gpt-6-astra`、分控 `gpt-6.1-sol`。新部署默认 `xhigh`；已有合法 `high` 或 `xhigh` 配置原样保留，升级和连接恢复不默默升降强度。需要变更时显式使用 `-ReasoningEffort high` 或 `-ReasoningEffort xhigh`，并核对实际 worker.policy；不同强度可能改变时延与用量。参数直接传给每次 `codex exec`，不依赖聊天窗口选择，也不静默换模型。交互式使用 Skill 时选择对应角色模型和已约定强度；Skill 文字不能切换已开始的对话模型。
 
 各电脑使用本机 Codex 登录，不集中复制员工登录凭据。首次启用前用该电脑账号验证指定模型可用。执行器已在 Codex CLI 0.162.0-alpha.17.2 验证；旧 CLI 缺少 `--ignore-user-config` / `--ignore-rules` 或禁用工具参数时应升级，失败保持 blocked，不移除隔离参数来强行运行。
 
@@ -22,7 +24,7 @@
 & 'D:\WorkTraceHub\scripts\Configure-Learning.ps1' -DataDir 'D:\WorkTraceHub\data' -Action Enable -AutoDispatch -MaxCallsPerDay 6 -Start '18:00' -End '23:59'
 ```
 
-脚本按角色自动选择模型；必要时用 `-CodexPath '<本机 codex.exe 绝对路径>'`。不要照抄另一台电脑 Codex 的安装路径。默认工作日与时区为周一至周五、Asia/Shanghai。非默认工作日可通过完整 worker-configure 策略设置；首版窗口必须在同一自然日内。
+脚本按角色自动选择模型，不传 ReasoningEffort 时沿用已有合法设置，新配置默认 xhigh；必要时用 `-CodexPath '<本机 codex.exe 绝对路径>'`。不要照抄另一台电脑 Codex 的安装路径。默认工作日与时区为周一至周五、Asia/Shanghai。非默认工作日可通过完整 worker-configure 策略设置；首版窗口必须在同一自然日内。
 
 服务每 5 秒检查本地队列；联网分控约每 30 秒同步上下行内容，离线分控不尝试远程同步。这些检查不调用模型。联网总控每天给每个未撤销设备创建一个稳定幂等键的 `personal.summarize` 任务；节点仅在本地学习启用、允许时段内执行。未启用的联网分控会排队并在过期后标记 blocked，不假装完成。
 
@@ -35,11 +37,13 @@
 & 'D:\WorkTrace\scripts\Configure-Learning.ps1' -DataDir 'D:\WorkTrace\data' -Action Status
 ```
 
-恢复可用面板按钮保持原配置；重新执行 Enable 会采用命令行传入或默认的时段/限额。没有启用自动学习时仍能手动调用技能。
+恢复可用面板按钮保持原配置；重新执行 Enable 会采用命令行传入或默认的时段/限额，模型强度按上述规则沿用。没有启用自动学习时仍能手动调用技能。实际学习配置变化、自然离开允许时段或停机将使正在进行的旧自动结果失效，迟到返回不保存，预留次数不退回；重复提交相同配置不撤销任务。
+
+总控失败批次每个本地自然日最多一次自动尝试，保留检查点，最早下一日允许窗口重试；未尝试批次优先，未尝试之间仍按到达顺序。通过 status.worker.hub_schedule 查看 recent_open_attempts 和 next_retry_day。总控每日预算共享，失败不再挡住其他批次，但不保证各员工当夜完成；这不同于离线分控失败必须显式 retry-local。
 
 ## 没有总控时的本地日循环
 
-connection_mode=offline 的分控使用同一执行器和 gpt-6.1-sol/high；不需要 AutoDispatch、虚构总控地址或 hub 任务。本地服务按策略时区的日期、员工/设备建立稳定幂等键，只有新增原始证据或可处理的检查点才创建当日一次 personal.summarize。任务 source=local，与总控下发的 source=hub 分开。该节点的状态含 local_schedule，可看到待处理证据、当天任务和检查点；jobs 可查看实际回执。
+connection_mode=offline 的分控使用同一执行器和 gpt-6.1-sol，强度遵循上述新建/沿用规则；不需要 AutoDispatch、虚构总控地址或 hub 任务。本地服务按策略时区的日期、员工/设备建立稳定幂等键，只有新增原始证据或可处理的检查点才创建当日一次 personal.summarize。任务 source=local，与总控下发的 source=hub 分开。该节点的状态含 local_schedule，可看到待处理证据、当天任务和检查点；jobs 可查看实际回执。
 
 每日最多三批，每批默认 50 条，模型日限额仍是默认 6 次。更大积压保留到次日或暂停后手动复盘；不会因为工作多就无限续建同日日任务。无新证据结束，纯元数据不调用模型。已经调用过但失败、超时或重启中断的批次，不自动反复付费重试；先暂停学习，检查错误与未完成批次，再明确重试或手动完成。恢复网络、再次 Enable 或服务重启本身不等于授权重跑该模型批次。
 
@@ -61,7 +65,7 @@ connection_mode=offline 的分控使用同一执行器和 gpt-6.1-sol/high；不
 
 例如要求总控：“给 CS001 对应设备下发今晚一次个人总结任务，先从 status 确认 device_id；幂等键用 nightly-manual:日期:设备编号；最多三批。只分析已保存证据。”
 
-`worktrace_node_jobs` 查看 queued/running/succeeded/blocked/cancelled/interrupted 与回执；`worktrace_cancel_job` 在分控下次同步后中止任务。取消不能撤销已经消耗的额度或已保存的总结。网络离线时取消不是立即生效。
+`worktrace_node_jobs` 查看 queued/running/succeeded/blocked/cancelled/interrupted 与回执；`worktrace_cancel_job` 在分控下次同步后中止任务。取消不能撤销已经消耗的额度或已保存的总结。网络离线时取消不是立即生效。下行任务按设备持久分页轮转，未来或暂停任务不再堵住后来的消息；未确认与取消回执继续重投。
 
 分控 Codex 可通过 `worktrace_reply_to_hub(job_id,text)` 回复任务或消息，标记 author=node_codex。每个任务一份不可覆盖的回复；后续追问创建新任务。总控用 `worktrace_node_replies` 阅读。没有运行模型的普通 message 只确认到达服务，不自动生成寒暄回复；自动总结任务另有结构化完成/失败回执。
 
@@ -71,7 +75,7 @@ connection_mode=offline 的分控使用同一执行器和 gpt-6.1-sol/high；不
 
 个人结构化方法回传后，总控保存分析时自动建立候选记录：SKILL.md 文本、loop 对象、原始证据引用、缺口和待验收清单。通过 `worktrace_candidates` 查询，指定 candidate_id 读取完整内容。它们存于统一库的 skill_candidates，不自动安装到员工技能目录。
 
-初始候选是根据个人方法生成的带来源草稿。跨员工比较、冲突处理、完善岗位规则、生成留出案例及评估仍由总控 Skill 执行；不能把自动生成草稿说成自动通过验证。总控按 candidate.md 保存到专门候选目录（避免目录名重叠覆盖），对照实际业务完善版本。
+初始候选是直接根据个人方法生成的带来源草稿，不自动吸收总控 findings 的纠错；总控先核对原文与分析，再用 candidate_revise 显式修订。数据库 loop 只接受现有严格字段，states/wait_for/allowed_actions 等执行设计另存附录。只有 raw 没有 learning.summary 时，先查 readiness 并按离线移交说明进行手动 source=all 审阅，不伪造员工总结或自动候选。跨员工比较、冲突处理、完善岗位规则、生成留出案例及评估仍由总控 Skill 执行；不能把自动生成草稿说成自动通过验证。总控按 candidate.md 保存到专门候选目录（避免目录名重叠覆盖），对照实际业务完善版本。
 
 ## 成本与验收
 

@@ -1,4 +1,6 @@
 ﻿$ErrorActionPreference='Stop'
+# Node CLI JSON is UTF-8, including in hidden Windows PowerShell 5.1 sessions.
+[Console]::OutputEncoding=New-Object Text.UTF8Encoding($false)
 function Get-WorkTraceHash([string]$Path){$s=[IO.File]::OpenRead($Path);$h=[Security.Cryptography.SHA256]::Create();try{[BitConverter]::ToString($h.ComputeHash($s)).Replace('-','').ToLowerInvariant()}finally{$s.Dispose();$h.Dispose()}}
 function Assert-WorkTracePlainPath([string]$Path){
  $cursor=[IO.Path]::GetFullPath($Path)

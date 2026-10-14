@@ -94,7 +94,7 @@ address 必须来自总控 status.ips；需要固定 IP 或 DHCP 保留。运行
 3. 托盘暂停停止采集，恢复遵守工作时段；短时断网保留 pending，恢复后不重复入库。
 4. 员工调用 `$worktrace-personal` 分析已存证据，保存个人总结；总控通过 personal_history 查询到同一 event_id，抽查三处关键步骤及判断。
 5. 总控提出一个确实欠缺的补证问题，员工下次同步接收、下次个人学习回答或明确 blocked。确认问题没有变成操作电脑的命令。
-6. 按 [夜间循环手册](nightly-loop.md) 配置本机 Codex 执行器：总控 Astra/high + AutoDispatch，分控 6.1 Sol/high。验收真实任务与回执、限额、暂停、取消及断线恢复；未启用的电脑继续手动触发。
+6. 按 [夜间循环手册](nightly-loop.md) 配置本机 Codex 执行器：总控 Astra/xhigh + AutoDispatch，分控 6.1 Sol/xhigh。验收真实任务与回执、限额、暂停、取消及断线恢复；未启用的电脑继续手动触发。
 
 调度由服务执行，每任务最多三批；无新证据结束、保留暂停、不操作微信。消息接收与业务外发是不同权限。频率和预算由总控根据积压调整。执行质量按 [两层循环](../skills/worktrace-hub/references/learning-loop.md) 记录，不用采样数量作为员工效率评价。
 

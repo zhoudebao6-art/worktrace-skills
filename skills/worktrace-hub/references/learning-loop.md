@@ -24,7 +24,7 @@
 
 数据库内 loop 严格使用 candidate.md 列出的 worktrace.loop-draft/1.0 字段；step 每项有 action/decision/check，claim 每项有 text/basis/evidence_event_ids，执行适配器保持 null。额外的状态转换图、wait_for、allowed_actions、完成证据和失败路线另存执行设计附录，不能直接提交给现有 API。业务成功与“已生成草稿”必须用不同状态。
 
-夜间调度使用部署目录 scripts/Configure-Learning.ps1 配置：总控 Enable + AutoDispatch，分控 Enable。总控固定 Astra/high、分控固定 6.1 Sol/high。默认工作日18:00–23:59、每台6次模型调用预留、每任务3批。联网模式每30秒同步取任务和传回执，5秒本地检查不消耗模型；离线模式只创建本地每日任务，不与总控通信。没有新内容或仅活动元数据不调用模型。暂停入口在面板；手动学习前必须暂停自动模式。message 只确认送达服务，分控用 reply_to_hub 发送 AI 回复。
+夜间调度使用部署目录 scripts/Configure-Learning.ps1 配置：总控 Enable + AutoDispatch，分控 Enable。总控角色模型固定 Astra、分控固定 6.1 Sol；新建默认 xhigh，已有合法 high/xhigh 沿用，显式配置才调整。默认工作日18:00–23:59、每台6次模型调用预留、每任务3批。联网模式每30秒同步取任务和传回执，5秒本地检查不消耗模型；离线模式只创建本地每日任务，不与总控通信。没有新内容或仅活动元数据不调用模型。暂停入口在面板；手动学习前必须暂停自动模式。message 只确认送达服务，分控用 reply_to_hub 发送 AI 回复。
 
 总控失败批次和预算耗尽批次保留检查点，每批每天最多一次自动尝试，最早下一本地自然日允许窗口再试；未尝试批次优先，未尝试之间仍按到达顺序。状态 worker.hub_schedule 显示近期未完成尝试和下一可重试日期。失败批次不再挡住其他批次，但总控每日预算共享，并非按员工平均分配额度，也不保证所有员工当夜完成。离线分控失败仍需显式 worker-retry-local，不能套用总控的跨日自动重试规则。重启后 running 变 interrupted，先查结果和检查点，避免重复付费。
 

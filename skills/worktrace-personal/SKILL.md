@@ -5,7 +5,9 @@ description: 在联网或独立离线员工分控上用 WorkTrace MCP 总结个�
 
 目标是让下一位执行者能够复现做法。应用名称和流水账不足以说明学会；遇到缺失的判断理由、输入或结果，要具体标明。读取资料不会授予操作软件或对外发送的权限。
 
-先 `worktrace_status` 核对 role=collector、员工编号与 connection_mode。自动执行器固定 gpt-6.1-sol/high；交互复盘也选择该模型与高推理强度。若自动学习启用，先在本机面板暂停学习，等 busy=false 再手动领取/保存。保持现有采集/暂停状态；这份技能只分析已保存证据。公司已授权工作学习时沿用授权，不逐条打断员工确认。
+任何复盘、测试或续用都先读取本技能及同目录 worktrace-collector、worktrace-evidence 的 `deployment.json`，核对唯一的 role/root，再用 `worktrace_status` 确认 role=collector、员工编号和 connection_mode。服务或 MCP 不可用时，联网部署从已核验源码运行 `scripts/Connect-Node.ps1 -WorkDir <原目录> -SkillsDirectory <原技能目录>`，或用 collector 的 control start/status/sync；沿用本机身份与信任，不因重启、断网或新对话再次索要链接或登记。离线只恢复本地服务；绑定缺损或冲突先恢复原配置或明确原目录，不扫描磁盘/局域网，也不将其当首次安装。仅首次没有任何本机状态才转 collector 收集连接和身份。连接恢复保持采集、学习开关原状。
+
+自动执行器角色模型固定 gpt-6.1-sol，新部署默认 xhigh；已有合法 high/xhigh 保持原设置，显式修改才变更强度。交互复盘选择该模型和已约定强度。若自动学习启用，先在本机面板暂停学习，等 busy=false 再手动领取/保存。保持现有采集/暂停状态；这份技能只分析已保存证据。公司已授权工作学习时沿用授权，不逐条打断员工确认。
 
 本次循环按 [references/learning-loop.md](references/learning-loop.md) 执行。先 `worktrace_personal_next`：无批次立即结束；有批次使用其 batch_id、digest，并通过 `worktrace_get_evidence` 核对必要原文，通过 `worktrace_tasks` 补充已记录任务上下文；只有批次包含的事件可作为本次引用。必要截图最多六张，未读过的图不得声称已核实。
 

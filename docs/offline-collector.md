@@ -1,6 +1,6 @@
 # 无总控的离线分控部署
 
-v0.5.0 提供正式离线分控入口，不需要员工电脑修改源码。这里“离线”指尚未连接公司总控；本地记录与数据库不依赖总控，Codex 学习仍需该电脑自己的账号、可用额度和模型网络。当前电脑必须是被指定的员工电脑，不能把开发电脑当总控或员工机。
+v0.5.2 提供正式离线分控入口，不需要员工电脑修改源码。这里“离线”指尚未连接公司总控；本地记录与数据库不依赖总控，Codex 学习仍需该电脑自己的账号、可用额度和模型网络。当前电脑必须是被指定的员工电脑，不能把开发电脑当总控或员工机。
 
 ## 1. 一次核对身份与范围
 
@@ -21,25 +21,25 @@ v0.5.0 提供正式离线分控入口，不需要员工电脑修改源码。这�
 
 ## 2. 下载并部署
 
-从公开的 [v0.5.0 Release](https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.5.0) 下载专用 `worktrace-skills-v0.5.0.zip` 与 `SHA256SUMS.txt`，无需 GitHub 登录。也可由公司转发同一原包。GitHub 自动生成的 Source code ZIP 没有完整发布清单，不能代替专用资产。
+从公开的 [v0.5.2 Release](https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.5.2) 下载专用 `worktrace-skills-v0.5.2.zip` 与 `SHA256SUMS.txt`，无需 GitHub 登录。也可由公司转发同一原包。GitHub 自动生成的 Source code ZIP 没有完整发布清单，不能代替专用资产。
 
 例如在一个新下载目录执行：
 
 ```powershell
-$release = 'https://github.com/zhoudebao6-art/worktrace-skills/releases/download/v0.5.0'
-curl.exe -L --fail "$release/worktrace-skills-v0.5.0.zip" -o '.\worktrace-skills-v0.5.0.zip'
+$release = 'https://github.com/zhoudebao6-art/worktrace-skills/releases/download/v0.5.2'
+curl.exe -L --fail "$release/worktrace-skills-v0.5.2.zip" -o '.\worktrace-skills-v0.5.2.zip'
 if ($LASTEXITCODE -ne 0) { throw 'ZIP 下载失败。' }
 curl.exe -L --fail "$release/SHA256SUMS.txt" -o '.\SHA256SUMS.txt'
 if ($LASTEXITCODE -ne 0) { throw '校验文件下载失败。' }
 $rows = @(Get-Content -LiteralPath '.\SHA256SUMS.txt' | Where-Object { $_ -match '^[a-fA-F0-9]{64}\s+\*?worktrace-skills-v0\.4\.1\.zip$' })
 if ($rows.Count -ne 1) { throw '未找到唯一的发布 ZIP 校验项。' }
-$stream = [IO.File]::OpenRead((Join-Path (Get-Location) 'worktrace-skills-v0.5.0.zip'))
+$stream = [IO.File]::OpenRead((Join-Path (Get-Location) 'worktrace-skills-v0.5.2.zip'))
 $sha = [Security.Cryptography.SHA256]::Create()
 try { $actual = [BitConverter]::ToString($sha.ComputeHash($stream)).Replace('-', '').ToLowerInvariant() }
 finally { $stream.Dispose(); $sha.Dispose() }
 if ($actual -ne ($rows[0] -split '\s+')[0].ToLowerInvariant()) { throw 'ZIP 校验失败。' }
 if (Test-Path -LiteralPath 'D:\WorkTraceChemSource') { throw '源码目录已存在，请检查或选新目录。' }
-Expand-Archive -LiteralPath '.\worktrace-skills-v0.5.0.zip' -DestinationPath 'D:\WorkTraceChemSource'
+Expand-Archive -LiteralPath '.\worktrace-skills-v0.5.2.zip' -DestinationPath 'D:\WorkTraceChemSource'
 ```
 
 解压后根目录应直接含 scripts、skills、.worktrace-source.json。阅读 AGENTS.md，再在 `D:\WorkTraceChemAdmin\identity.json` 保存以下 JSON，将所有示例内容换成真实值；已有公司编号时增加 org_id：
@@ -107,7 +107,7 @@ if ($LASTEXITCODE -ne 0) { throw '文件范围配置失败。' }
 powershell -NoProfile -ExecutionPolicy Bypass -File 'D:\WorkTraceChem\scripts\Configure-Learning.ps1' -DataDir 'D:\WorkTraceChem\data' -Action Enable -MaxCallsPerDay 6 -Start '18:00' -End '23:59'
 ```
 
-采用本机 Codex 登录、gpt-6.1-sol/high，不共享账号。时间按真实下班时间调整；模型不可用时报告个人自动学习尚未验收，不静默换模型。本地服务创建每日幂等的 personal.summarize 任务，最多三批，消费新增原始证据并保存 learning.summary。无总控任务也应能运行；必须验收队列、回执与实际总结，不能只看开关。
+采用本机 Codex 登录、gpt-6.1-sol/xhigh，不共享账号。时间按真实下班时间调整；模型不可用时报告个人自动学习尚未验收，不静默换模型。本地服务创建每日幂等的 personal.summarize 任务，最多三批，消费新增原始证据并保存 learning.summary。无总控任务也应能运行；必须验收队列、回执与实际总结，不能只看开关。
 
 离线任务与总控任务分开，不上传本地任务回执，也不能给本地任务伪造“回复总控”。暂停、超时、重启和日预算受执行器控制；无新证据结束，失败不无限重试。手动复盘先暂停学习并等 busy=false，保留原采集状态。纯窗口元数据只能得到 metadata_only，总结不升级为“已经学会岗位”。
 
@@ -146,4 +146,4 @@ Restore 目标必须全新，它只用于审阅，不能作为活跃分控启动
 
 给员工电脑 Codex 的直接入口：
 
-> 读取并按 https://raw.githubusercontent.com/zhoudebao6-art/worktrace-skills/v0.5.0/prompts/chemical-offline-collector.txt 部署本机独立离线分控。仅使用该公开发布的 v0.5.0 专用包，先核验身份、范围和已有部署；不要把本机当总控。
+> 读取并按 https://raw.githubusercontent.com/zhoudebao6-art/worktrace-skills/v0.5.2/prompts/chemical-offline-collector.txt 部署本机独立离线分控。仅使用该公开发布的 v0.5.2 专用包，先核验身份、范围和已有部署；不要把本机当总控。

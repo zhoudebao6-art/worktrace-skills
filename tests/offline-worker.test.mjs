@@ -33,7 +33,7 @@ test('offline schedule requires new work, enabled/unpaused settings and local wo
 });
 
 test('three bounded batches preserve excess raw evidence for the following local calendar day',async t=>{
- const seen=[];const x=fixture(t,async input=>{seen.push(JSON.parse(input.prompt.split('\nDATA\n')[1]));assert.equal(input.model,'gpt-6.1-sol');assert.equal(input.reasoningEffort,'high');return {result};});x.w.configure(policy);
+ const seen=[];const x=fixture(t,async input=>{seen.push(JSON.parse(input.prompt.split('\nDATA\n')[1]));assert.equal(input.model,'gpt-6.1-sol');assert.equal(input.reasoningEffort,'xhigh');return {result};});x.w.configure(policy);
  for(let i=0;i<160;i++)x.record('合成文本 #'+i);await x.w.tick();assert.equal(x.calls,3);assert.equal(x.summaries().length,3);assert.equal(x.w.status().local_schedule.pending_raw_events,10);assert(seen.every(d=>d.batch.source_coverage.new_events===50));
  await x.w.tick();assert.equal(x.calls,3);x.setTime('2026-10-13T11:00:00.000Z');await x.w.tick();assert.equal(x.calls,4);assert.equal(x.w.status().local_schedule.pending_raw_events,0);assert.equal(listJobs(x.s).length,2);assert.equal(x.w.status().usage.day,'2026-10-13');
  assert.match(x.w.status().local_schedule.remainder,/次日/);

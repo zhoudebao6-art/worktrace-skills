@@ -50,4 +50,3 @@
 ## 发给目标电脑 Codex
 
 > 请读取并执行 https://raw.githubusercontent.com/zhoudebao6-art/worktrace-skills/v0.5.2/prompts/upgrade-worktrace-v0.5.2.txt ，核验本机原部署后升级运行服务和对应技能到 v0.5.2，先冷备，保留全部数据、身份、离线模式和原暂停状态，按指令报告本机验收结果。
-

@@ -1,0 +1,11 @@
+请在当前这台 Windows 员工电脑，一次修复已部署 WorkTrace 分控的持续连接与技能入口，随后不再因新对话、普通断网或重启向我索要公司链接。普通源码地址是 https://github.com/zhoudebao6-art/worktrace-skills 。本机不是总控；仅更新总控不能替这台电脑完成修复。
+
+先从已装 worktrace-collector、worktrace-personal、worktrace-evidence 的 deployment.json 找唯一原 role/root，核对员工身份、connection_mode、MCP 和登录启动路径。只检查这些绑定、用户明确目录及其中已有接入状态，不扫描磁盘/局域网，不打印 data/config.json、登记文件或密钥。联网部署复用原身份、地址、证书和证据；离线保持离线，仅恢复本地服务。冲突或损坏时保留现场，恢复原配置或明确原目录，不能改编号重新登记或清 data；只有首次没有任何本机状态才需要公司完整链接与真实身份。
+
+按仓库 main 的 docs/download.md 匿名 clone 当前完整源码到独立新目录，核验 origin、干净 commit、引擎清单，读取 AGENTS.md。使用实际可用的 Git，必要时设置 WORKTRACE_GIT；无需 GitHub 登录，不下载旧版冒充修复，不伪造清单。缓存按 AGENTS.md 放非系统盘；备份和原 data 不是缓存。
+
+让新入口长期生效：从已核验的新完整源码运行 powershell.exe -NoProfile -ExecutionPolicy Bypass -File '<新源码目录>\scripts\Install-SharedSkills.ps1' -Role collector -SkillsDirectory '<原技能目录>' -Update -AdoptDeployment。共享安装按原收据更新；旧 Join 安装无收据时，AdoptDeployment 按原 deployment.json、原 engine-manifest.json 和旧技能文件核验来源，备份后迁移受管技能文件，保留原绑定、部署版本与本地附加配置。来源不明、本地修改或文件冲突时保留差异报告，不绕过校验、不造收据，不从新源码直接调用 Install-Skills.ps1 覆盖。此步骤不升级服务程序或迁移数据库。
+
+从新完整源码运行 powershell.exe -NoProfile -ExecutionPolicy Bypass -File '<新源码目录>\scripts\Connect-Node.ps1' -WorkDir '<原运行目录>' -SkillsDirectory '<原技能目录>'。它复用本机身份，恢复服务、MCP、当前用户登录启动并验证同步；已装三个绑定唯一时也可省略 WorkDir。不要调用首次 Join、bootstrap 或初始化覆盖原数据，不改变采集及自动学习开关。地址/证书真实变化需核验后受控迁移，不跳过 TLS。新对话读取更新后的技能；当前对话需要时重新连接 WorkTrace MCP，不修改其他 MCP 或复制 Codex 登录信息。
+
+核验原 org_id/employee_id/device_id/installation_id/stream_id 与采集/学习开关不变，三个绑定、MCP、登录启动都指向原目录，服务与可见托盘正常，status/sync 成功且总控收到心跳。不能将技能更新说成服务版本升级；不能把仅配置启动项说成已实测重新登录。正常断网由运行服务保留并定期补传；登录启动在当前用户登录后恢复，关机、休眠或未登录不保证在线。最后简报本机实际修复、技能备份、身份保留、同步、登录启动与未验证项，不声称已修好其他员工电脑。

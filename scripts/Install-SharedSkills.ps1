@@ -1,7 +1,8 @@
 ﻿param(
  [Parameter(Mandatory=$true)][ValidateSet('hub','collector')][string]$Role,
  [string]$SkillsDirectory,
- [switch]$Update
+ [switch]$Update,
+ [switch]$AdoptDeployment
 )
 $ErrorActionPreference='Stop'
 Set-StrictMode -Version 2.0
@@ -53,13 +54,34 @@ function Get-Inventory([string]$Root){
  }
  return $result
 }
-function Assert-SourceFile([string]$Path){
+function Assert-NoAccessCredential([string]$FullPath,[string]$DisplayPath){
+ $text=[IO.File]::ReadAllText($FullPath)
+ if($text -notmatch '^\s*[\{\[]'){return}
+ $found=$text -cmatch '"(?:invite_token|request_secret|device_token)"\s*:\s*"[A-Za-z0-9_-]{43}"'
+ if(!$found){
+  try{$value=$text|ConvertFrom-Json}catch{return}
+  $pending=New-Object 'Collections.Generic.Stack[object]';$pending.Push($value)
+  while($pending.Count -and !$found){
+   $item=$pending.Pop();if($null -eq $item){continue}
+   if($item -is [Array]){foreach($child in $item){$pending.Push($child)};continue}
+   if($item -isnot [PSCustomObject]){continue}
+   foreach($property in $item.PSObject.Properties){
+    if($property.Name -cin @('invite_token','request_secret','device_token') -and $property.Value -is [string] -and $property.Value -cmatch '^[A-Za-z0-9_-]{43}$'){$found=$true;break}
+    if($null -ne $property.Value -and ($property.Value -is [PSCustomObject] -or $property.Value -is [Array])){$pending.Push($property.Value)}
+   }
+  }
+ }
+ if($found){throw "技能源包含私人接入码、接入请求或登记凭据，未复制（未显示密钥）：$DisplayPath"}
+}
+function Assert-SourceFile([string]$Path,[string]$BaseDirectory=$sourceRoot){
  $parts=$Path.Split('/');$leaf=$parts[-1]
- if($parts -contains 'data' -or $parts -contains '.git' -or $parts -contains 'node_modules' -or $parts -contains '__pycache__' -or
-    $leaf -in @('node.exe','deployment.json','config.json','running.json','enrollment.json','credentials.json','.worktrace-install.json') -or
-    $leaf -match '(^\.env($|\.)|\.(sqlite.*|db|pem|pfx|key|wpack|enroll\.json)$)'){
+ if($parts -contains 'data' -or $parts -contains 'self-enrollment' -or $parts -contains 'lan-enrollment' -or $parts -contains 'self-lan-enrollment' -or $parts -contains '.git' -or $parts -contains 'node_modules' -or $parts -contains '__pycache__' -or
+    $leaf -in @('node.exe','deployment.json','config.json','running.json','enrollment.json','credentials.json','.worktrace-install.json','invite.json','invitation.json','request.json','join-request.json','join-state.json') -or
+    $leaf -match '(^\.env($|\.)|\.(sqlite.*|db|pem|pfx|key|wpack|enroll\.json|invite\.json|invitation\.json|request\.json|join-state\.json)$)' -or
+    $leaf -match '(^|\.)(enrollment|request|invite|invitation|join-request|join-state)\.json\..+\.tmp$'){
   throw "技能源包含运行数据、凭据或运行时二进制，未复制：$Path"
  }
+ Assert-NoAccessCredential (Join-Path $BaseDirectory $Path) $Path
 }
 function Assert-EqualInventory($Expected,$Actual,[string]$Label){
  if($Expected.Count -ne $Actual.Count){throw "$Label 文件数不一致。"}
@@ -99,6 +121,38 @@ function Check-Engine([string]$Skill,$Inventory){
  }
  Assert-EqualInventory $listed $actual '引擎清单校验'
 }
+function Get-DeploymentManagedFiles([string]$Destination,[string]$Name){
+ if(!$Update -or !$AdoptDeployment -or $Role -ne 'collector'){throw "已有同名技能但无共享安装收据，未自动接管：$Destination；已绑定分控可显式 -Update -AdoptDeployment 核验迁移。"}
+ $bindingPath=Join-Path $Destination 'deployment.json';Assert-NoReparse $bindingPath
+ if(!(Test-Path -LiteralPath $bindingPath -PathType Leaf)){throw '旧技能缺少 deployment.json；请先恢复原绑定，不重新索取公司链接。'}
+ $binding=Get-Content -LiteralPath $bindingPath -Raw -Encoding UTF8|ConvertFrom-Json
+ if($binding.role -ne 'collector' -or $binding.root -isnot [string] -or $binding.root -notmatch '^[A-Za-z]:[\\/]' -or $binding.root.Substring(2).Contains(':')){throw '旧技能部署绑定无效，未接管。'}
+ $deployed=[IO.Path]::GetFullPath($binding.root).TrimEnd('\','/');Assert-NoReparse $deployed
+ if($deployed.Length -le 3){throw '旧部署不能为磁盘根目录。'}
+ if((Test-Within $destRoot $deployed) -or (Test-Within $deployed $destRoot)){throw '技能安装目录与原运行目录不能重叠；未修改旧部署。'}
+ foreach($sibling in $names){
+  $siblingBinding=Join-Path (Join-Path $destRoot $sibling) 'deployment.json';Assert-NoReparse $siblingBinding
+  if(Test-Path -LiteralPath $siblingBinding -PathType Leaf){
+   $other=Get-Content -LiteralPath $siblingBinding -Raw -Encoding UTF8|ConvertFrom-Json
+   if($other.role -ne 'collector' -or $other.root -isnot [string] -or !([IO.Path]::GetFullPath($other.root).TrimEnd('\','/')).Equals($deployed,[StringComparison]::OrdinalIgnoreCase)){throw '三个分控技能绑定了不同目录，未迁移任何技能。'}
+  }
+ }
+ if($script:adoptionRoot -and !$deployed.Equals($script:adoptionRoot,[StringComparison]::OrdinalIgnoreCase)){throw '三个分控技能绑定了不同目录，未迁移任何技能。'}
+ $script:adoptionRoot=$deployed
+ $manifestPath=Join-Path $deployed 'engine-manifest.json';Assert-NoReparse $manifestPath
+ $manifest=Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8|ConvertFrom-Json
+ if($manifest.format -ne 'worktrace.source/1.0' -or $binding.version -ne $manifest.version){throw '旧部署版本或引擎清单与绑定不一致，未接管。'}
+ $engineFiles=Read-FileList $manifest.files
+ foreach($entry in $engineFiles.Values){
+  $file=Join-Path $deployed $entry.path;Assert-NoReparse $file
+  if(!(Test-Path -LiteralPath $file -PathType Leaf) -or (Get-Item -LiteralPath $file).Length -ne $entry.size -or (Get-SharedHash $file) -ne $entry.sha256){throw '旧部署源码校验失败，未更新技能或修改原部署。'}
+ }
+ foreach($required in @('Start.ps1','Install-Skills.ps1','src/server.mjs')){if(!$engineFiles.ContainsKey($required)){throw '旧引擎清单缺少必需文件，未接管。'}}
+ $prefix='skills/'+$Name+'/';$managed=@{}
+ foreach($entry in $engineFiles.Values){if($entry.path.StartsWith($prefix,[StringComparison]::Ordinal)){$relative=$entry.path.Substring($prefix.Length);Assert-SourceFile $relative (Join-Path $deployed ('skills/'+$Name));$managed[$relative]=@{path=$relative;sha256=$entry.sha256;size=$entry.size}}}
+ if(!$managed.ContainsKey('SKILL.md')){throw '旧引擎清单缺少对应技能源，未接管。'}
+ return $managed
+}
 function Invoke-Git([string[]]$Arguments){
  $lines=@(& $script:git -c core.quotepath=false -C $sourceRoot @Arguments 2>&1)
  if($LASTEXITCODE -ne 0){throw 'Git 来源校验失败；请使用已克隆且已提交的源码，并检查 origin 配置。'}
@@ -135,13 +189,14 @@ Assert-NoReparse $destRoot
 if((Test-Within $destRoot $sourceRoot) -or (Test-Within $sourceRoot $destRoot)){throw '技能源与安装目录不能重叠。'}
 $names=if($Role -eq 'hub'){@('worktrace-hub')}else{@('worktrace-collector','worktrace-evidence','worktrace-personal')}
 $plans=@()
+$script:adoptionRoot=$null
 
 # Preflight every selected skill before creating or changing any installation.
 foreach($name in $names){
  $source=Join-Path $sourceRoot ('skills/'+$name);$dest=Join-Path $destRoot $name
  $files=Get-Inventory $source
  if(!$files.ContainsKey('SKILL.md')){throw "技能源缺少 SKILL.md：$name"}
- foreach($key in $files.Keys){Assert-SourceFile $key}
+ foreach($key in $files.Keys){Assert-SourceFile $key $source}
  if($gitMode){
   $tracked=@(Invoke-Git @('ls-files','--',('skills/'+$name+'/')))
   $trackedFiles=@{}
@@ -154,10 +209,13 @@ foreach($name in $names){
  $oldFiles=Get-Inventory $dest;$managed=@{};$action='install';$previousCommit=$null
  if(Test-Path -LiteralPath $dest){
   $receiptPath=Join-Path $dest $receiptName
-  if(!$oldFiles.ContainsKey($receiptName)){throw "已有同名技能但无共享安装收据，未自动接管：$dest；请用独立 SkillsDirectory 检视迁移。"}
-  $receipt=Get-Content -LiteralPath $receiptPath -Raw -Encoding UTF8|ConvertFrom-Json
-  if($receipt.format -ne 'worktrace.skill-install/1.0' -or $receipt.skill -ne $name -or $receipt.role -ne $Role -or $receipt.repository -ne $repository){throw "已有技能来源或角色不同，未覆盖：$name"}
-  $managed=Read-FileList $receipt.files;$previousCommit=$receipt.commit
+  if(!$oldFiles.ContainsKey($receiptName)){
+   $managed=Get-DeploymentManagedFiles $dest $name
+  }else{
+   $receipt=Get-Content -LiteralPath $receiptPath -Raw -Encoding UTF8|ConvertFrom-Json
+   if($receipt.format -ne 'worktrace.skill-install/1.0' -or $receipt.skill -ne $name -or $receipt.role -ne $Role -or $receipt.repository -ne $repository){throw "已有技能来源或角色不同，未覆盖：$name"}
+   $managed=Read-FileList $receipt.files;$previousCommit=$receipt.commit
+  }
   foreach($key in $managed.Keys){
    if(!$oldFiles.ContainsKey($key) -or $oldFiles[$key].sha256 -ne $managed[$key].sha256 -or $oldFiles[$key].size -ne $managed[$key].size){throw "已安装技能存在本地修改，未覆盖：$name/$key；请保留修改，并在独立目录检查新版后迁移。"}
   }

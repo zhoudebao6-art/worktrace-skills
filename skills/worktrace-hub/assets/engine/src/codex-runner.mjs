@@ -5,12 +5,12 @@ import {createInterface} from 'node:readline';
 import {assert} from './protocol.mjs';
 // Runs the installed CLI using its own login. No credentials are copied and no
 // user MCP, desktop controls, shell, plugins, hooks or unrelated skills load.
-export function codexArgs({cwd,schemaFile,outputFile,model,reasoningEffort='high',images=[]}){
+export function codexArgs({cwd,schemaFile,outputFile,model,reasoningEffort='xhigh',images=[]}){
  const args=['exec','--ignore-user-config','--ignore-rules','--ephemeral','--skip-git-repo-check','--sandbox','read-only','--cd',cwd,'--json','--output-schema',schemaFile,'--output-last-message',outputFile,'-c','web_search="disabled"','-c','approval_policy="never"','-c','model_reasoning_effort='+JSON.stringify(reasoningEffort)];
  for(const f of ['shell_tool','unified_exec','apps','plugins','hooks','plugin_hooks','browser_use','browser_use_external','computer_use','multi_agent','multi_agent_v2','image_generation','memories','skill_search','workspace_dependencies','view_image'])args.push('--disable',f);
  args.push('--enable','skip_host_skill_discovery');if(model)args.push('--model',model);for(const img of images)args.push('--image',img);args.push('-');return args;
 }
-export async function runCodex({executable,dir,prompt,schema,model='',reasoningEffort='high',timeoutSeconds=300,images=[],signal}){
+export async function runCodex({executable,dir,prompt,schema,model='',reasoningEffort='xhigh',timeoutSeconds=300,images=[],signal}){
  assert(isAbsolute(executable)&&basename(executable).toLowerCase()==='codex.exe'&&existsSync(executable),'请配置本机已登录 Codex CLI 的 codex.exe 绝对路径');
  assert(timeoutSeconds>=30&&timeoutSeconds<=900&&images.length<=6,'模型执行预算无效');mkdirSync(dir,{recursive:true});const outputFile=join(dir,'result.json'),schemaFile=join(dir,'schema.json');writeFileSync(schemaFile,JSON.stringify(schema));
  // Unique run directories prevent a previous successful output being mistaken

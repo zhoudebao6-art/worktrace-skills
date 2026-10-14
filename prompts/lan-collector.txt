@@ -1,0 +1,13 @@
+请在这台 Windows 员工电脑准备或恢复 WorkTrace 分控与总控的持续连接；本机是 collector，不初始化总控。
+
+先读取已装 worktrace-collector、worktrace-personal、worktrace-evidence 的 deployment.json，核对本机唯一 role/root、员工身份、connection_mode 与已有接入状态。只检查这些绑定、用户指定目录及其中保存的状态，不扫描整个磁盘或局域网。已有联网部署直接复用本机身份、地址、证书及证据；断网、重启、新对话或测试不再次询问公司完整链接，也不重新登记。离线只恢复本地服务，不擅自联网或询问总控链接。绑定冲突、配置损坏或 data 存在而缺配置时先恢复原配置或明确原目录，不能当作首次安装。
+
+按 https://github.com/zhoudebao6-art/worktrace-skills/blob/main/docs/download.md 与 docs/lan-join.md 匿名取得当前 main 的完整源码。使用本机 Git 或实际发现且 --version 验证可用的 Codex 自带 Git，可设置 WORKTRACE_GIT；核验 origin、干净 commit 和引擎清单，阅读 AGENTS.md。普通 https://github.com/zhoudebao6-art/worktrace-skills 链接足够下载旧分控修复源码；无需 GitHub 登录或写权限。源码与运行目录分开，不伪造 .worktrace-source.json，也不把历史 ZIP 当作当前 main。
+
+已有联网分控按 prompts/repair-collector-connection.txt 更新三个技能，再从已核验源码运行 scripts/Connect-Node.ps1 -WorkDir <原运行目录> -SkillsDirectory <原技能目录>，恢复服务、MCP、当前 Windows 用户登录启动和同步。WorkDir 可省略，由当前用户已装技能的唯一绑定发现；已完成部署也可用 Join-Lan.ps1 -WorkDir <原目录> 续用。保持采集/自动学习开关原状；-SkipMcp、-SkipLogonStartup 只用于明确需要跳过对应设置的场景，不清除原配置。
+
+仅首次没有任何本机部署或接入状态时，使用完整 GitHub 公司连接链接，保留 #worktrace-join=v1. 后全部片段；缺少时才索取。收集真实唯一员工编号、真实姓名和实际电脑名，不能填测试身份或借用他人编号。运行 scripts/Join-Lan.ps1 -ConnectionLink <完整公司链接> -WorkDir <本机长期目录> -EmployeeId <真实编号> -EmployeeName <真实姓名> -ComputerLabel <实际电脑名>。总控已启用允许 LAN 网段时，不需要邀请码或总控逐台确认。
+
+LAN 首次接入默认配置当前用户登录启动，首次采集和自动学习关闭。公司既定部署已明确工作范围并授权记录时才使用 -StartCapture；-SkipLogonStartup 可跳过登录启动设置。保留可见托盘和暂停入口。现有身份、数据及主动暂停不覆盖；保留 setup\lan-enrollment 的私有请求和登记状态供原请求恢复，不输出秘密、不清理状态反复登记。地址或证书真实改变需核验后受控迁移，不能关闭 TLS 或用新链接直接替换信任。
+
+缓存遵守 AGENTS.md：有 D 盘用 D:\codex+\temp 和 D:\codex+\cache，没有 D 盘用运行目录下 runtime-temp/runtime-cache。核验实际服务 gpt-6.1-sol/xhigh、三个技能与 MCP/登录启动指向原目录、身份心跳与总控 last_seen。登录启动配置与真实登录后的恢复分别报告，关机、休眠或未登录不保证在线。连接、真实工作采样、个人总结分别验收；不把心跳当作已采集或已学习。最后简报实际身份、运行目录、服务/登录启动、同步、采集/学习开关及未验证项。
