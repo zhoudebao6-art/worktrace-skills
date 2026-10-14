@@ -47,6 +47,44 @@ function downloadFixture(f){
  return {folder,manifest,manifestPath,run};
 }
 
+function legacyDeployment(f){
+ const deployed=join(f.dir,'legacy-node');cpSync(join(f.repo,'skills','worktrace-hub','assets','engine'),deployed,{recursive:true});
+ mkdirSync(join(deployed,'data'),{recursive:true});writeFileSync(join(deployed,'data','untouched.txt'),'synthetic local records only');
+ const names=['worktrace-collector','worktrace-evidence','worktrace-personal'];
+ for(const name of names){const dest=join(f.skills,name);cpSync(join(deployed,'skills',name),dest,{recursive:true});writeFileSync(join(dest,'deployment.json'),JSON.stringify({role:'collector',root:deployed,version:json(join(deployed,'engine-manifest.json')).version}));}
+ return {deployed,names};
+}
+
+test('旧部署技能：显式核验迁移一次，保留绑定、附加文件与运行数据，后续更新幂等',psOptions,t=>{
+ const f=fixture(t),{deployed,names}=legacyDeployment(f);
+ const extra=join(f.skills,'worktrace-collector','local-notes.txt');writeFileSync(extra,'keep local notes');
+ const original=snapshot(f.skills),engineBefore=snapshot(deployed);
+ rejected(f.run('collector',['-Update']),/无共享安装收据/);assert.deepEqual(snapshot(f.skills),original);
+ const result=f.run('collector',['-Update','-AdoptDeployment']);assert.equal(result.code,0,result.text);
+ const rows=result.stdout.split(/\r?\n/).filter(x=>x.startsWith('{')).map(JSON.parse);
+ for(const name of names){const row=rows.find(x=>x.skill===name);assert(row.backup);assert(!existsSync(join(row.backup,'.worktrace-install.json')));assert.equal(json(join(f.skills,name,'.worktrace-install.json')).commit,f.initial);assert.equal(hash(join(f.skills,name,'deployment.json')),original[name+'/deployment.json']);assert.equal(hash(join(f.skills,name,'SKILL.md')),hash(join(f.repo,'skills',name,'SKILL.md')));}
+ assert.equal(readFileSync(extra,'utf8'),'keep local notes');assert.deepEqual(snapshot(deployed),engineBefore);
+ const migrated=snapshot(f.skills),again=f.run('collector',['-Update','-AdoptDeployment']);assert.equal(again.code,0,again.text);assert.deepEqual(snapshot(f.skills),migrated);
+});
+
+test('旧部署技能：引擎篡改或技能本地改稿在整组预检阶段拒绝迁移',psOptions,t=>{
+ const f=fixture(t),{deployed}=legacyDeployment(f),before=snapshot(f.skills);
+ const engineFile=join(deployed,'src','server.mjs'),old=readFileSync(engineFile);writeFileSync(engineFile,Buffer.concat([old,Buffer.from('\n// changed\n')]));
+ rejected(f.run('collector',['-Update','-AdoptDeployment']),/旧部署源码校验失败/);assert.deepEqual(snapshot(f.skills),before);writeFileSync(engineFile,old);
+ const local=join(f.skills,'worktrace-personal','SKILL.md');writeFileSync(local,readFileSync(local,'utf8')+'\nlocal knowledge');const edited=snapshot(f.skills);
+ rejected(f.run('collector',['-Update','-AdoptDeployment']),/存在本地修改/);assert.deepEqual(snapshot(f.skills),edited);assert(!existsSync(join(f.skills,'.worktrace-backups')));
+});
+
+test('旧部署技能：禁止安装进原引擎，旧清单不得接管部署绑定',psOptions,t=>{
+ const f=fixture(t),{deployed,names}=legacyDeployment(f),before=snapshot(f.skills);
+ for(const name of names)cpSync(join(f.skills,name,'deployment.json'),join(deployed,'skills',name,'deployment.json'));
+ const engineBefore=snapshot(deployed);
+ rejected(f.run('collector',['-Update','-AdoptDeployment','-SkillsDirectory',join(deployed,'skills')]),/原运行目录不能重叠/);assert.deepEqual(snapshot(deployed),engineBefore);
+ const manifestPath=join(deployed,'engine-manifest.json'),manifest=json(manifestPath),path='skills/worktrace-collector/deployment.json',file=join(deployed,path);
+ manifest.files.push({path,sha256:hash(file),size:readFileSync(file).length});writeFileSync(manifestPath,JSON.stringify(manifest));
+ rejected(f.run('collector',['-Update','-AdoptDeployment']),/运行数据、凭据或运行时二进制/);assert.deepEqual(snapshot(f.skills),before);
+});
+
 test('共享技能：纯源码安装、同版幂等、三分控技能和显式更新备份保留绑定',psOptions,t=>{
  const f=fixture(t);
  let r=f.run();assert.equal(r.code,0,r.text);

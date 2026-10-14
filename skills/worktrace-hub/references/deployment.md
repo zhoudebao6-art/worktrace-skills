@@ -11,7 +11,7 @@ bootstrap 启动服务和托盘、注册 worktrace MCP；新对话可使用工�
 
 用户要求员工只交链接给本机 Codex 即自动连接时，选择 LAN Join，不要求先提供员工清单、共享目录、私有邀请码或总控逐台确认。先升级实际服务至包含 `src/lan-join.mjs` 的当前源码，再在本机用 `lan-join-status` 核对实际公司网卡。按 operations.md 启用该网卡真实 RFC1918 网段，生成 `lan-join-link`。其他软件的 VPN 网卡不自动纳入公司接入范围。
 
-完整公司链接为 GitHub `tree/main#worktrace-join=v1.<base64url JSON>`，JSON 严格含 `format=worktrace.lan-link/1.0`、`hub_url`、`org_id`、`org_name`、`ca_pem`，不含任何私钥或设备秘密。用命令生成，不手工拼接或把实际公司链接写入公共仓库。普通仓库地址缺少公司信息；不能让员工扫描网络猜总控。
+完整公司链接为 GitHub `tree/main#worktrace-join=v1.<base64url JSON>`，JSON 严格含 `format=worktrace.lan-link/1.0`、`hub_url`、`org_id`、`org_name`、`ca_pem`，不含任何私钥或设备秘密。用命令生成，不手工拼接或把实际公司链接写入公共仓库。只在首次没有本机部署或接入状态时需要；普通仓库地址足够下载既有分控的修复源码，不扫描网络猜总控。
 
 员工 Codex 按[当前下载手册](https://github.com/zhoudebao6-art/worktrace-skills/blob/main/docs/download.md) 匿名 clone 完整 main，使用本机 Git 或实际核验的 Codex 自带 Git，可设 WORKTRACE_GIT。核对 origin、commit 和干净工作树；不使用旧 v0.4.1 ZIP 或伪造来源清单。随后在员工已登录桌面执行：
 
@@ -21,9 +21,11 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File '<完整源码目录>\sc
 
 完整步骤及可转发指令见[局域网接入手册](https://github.com/zhoudebao6-art/worktrace-skills/blob/main/docs/lan-join.md)和[员工指令](https://raw.githubusercontent.com/zhoudebao6-art/worktrace-skills/main/prompts/lan-collector.txt)。该模式默认关闭；开启后，允许网段内的设备自行申报身份。每台设备生成独立秘密，总控只接受该网段及原始请求一致的幂等重试；员工姓名仍需按真实人员填写，不是系统实名验证。
 
-Join-Lan 会准备固定 Node、服务、三个分控技能、MCP 和心跳，首次采集及自动学习关闭。`-EnableLogonStartup` 和 `-StartCapture` 按已经授权的部署范围启用，不能恢复员工主动暂停。`WorkDir\setup\lan-enrollment` 含私有请求和登记状态，保留原位供同身份重试，不复制或公开。已有离线、其他公司或不同身份数据拒绝覆盖。
+Join-Lan 会准备固定 Node、服务、三个分控技能、MCP、当前用户登录启动和心跳，首次采集及自动学习关闭。`-SkipLogonStartup` 可跳过设置；`-StartCapture` 按已经授权的范围启用，不能恢复员工主动暂停。`WorkDir\setup\lan-enrollment` 含私有请求和登记状态，保留原位供同身份恢复，不复制或公开。已有离线、其他公司或不同身份数据拒绝覆盖。
 
-网段须仍与当前网卡真实掩码匹配，总控 HTTPS 地址须仍属于本机网卡且被证书覆盖。DHCP 漂移、访客网络隔离或 TLS 不匹配按实际原因修复，不扩大允许网段、关闭证书验证或开放本机管理 API。实际员工心跳到达只验收连接，工作记录和个人总结需分别核验。
+已有分控的维护、状态、测试和续用先从本机三个技能的 deployment.json 找唯一原 role/root；从当前源码运行 `scripts/Connect-Node.ps1 -WorkDir <原目录> -SkillsDirectory <原技能目录>`，或用 collector 的 control start/status/sync，不重新索要公司链接或登记。Connect 保留原身份、证据、信任及采集/学习状态；离线只恢复本地服务。旧版无登录启动的员工电脑按[一次修复指令](https://raw.githubusercontent.com/zhoudebao6-art/worktrace-skills/main/prompts/repair-collector-connection.txt)更新技能并执行 Connect 后，正常重启与断网不再依赖人工链接。此步骤需在该电脑执行，仅更新总控不会自动生效；关机、休眠和未登录不保证在线。
+
+网段须仍与当前网卡真实掩码匹配，总控 HTTPS 地址须仍属于本机网卡且被证书覆盖。DHCP 漂移、访客网络隔离或 TLS 不匹配按实际原因修复；地址/证书改变须核验后受控迁移，不能用新链接无验证覆盖信任。配置损坏先恢复原配置或明确原目录，不重新登记、不扩大允许网段、关闭证书验证或开放本机管理 API。实际员工心跳到达只验收连接，工作记录和个人总结需分别核验。
 
 ## 员工清单与共享（手工登记方式）
 

@@ -11,11 +11,13 @@ description: 由总控 Codex 从随技能源码搭建 WorkTrace 环境，准备�
 
 不制作安装包，不让员工自己编写采集程序。技能内 `assets/engine` 是经过校验的服务源码；bootstrap 首次准备经官方 SHA256 校验的固定 Node 运行时；总控按脚本准备环境，不临时重造采集器。先读 [references/deployment.md](references/deployment.md)。
 
-首次用 `scripts/bootstrap.ps1 -WorkDir <公司指定独立数据目录>` 搭建指定总控电脑的服务并登记 MCP；它生成不含密钥的 deployment.json。后续使用 `scripts/control.ps1 -Action start` 启动、`-Action status` 检查。不要打印 data/config.json、running.json 或登记文件，它们包含密钥。
+任何维护、状态、测试或续用先读取本技能的 deployment.json，核对本机 role/root；已有总控用 `scripts/control.ps1` 的 start、status 动作。仅首次且没有本机部署状态时用 `scripts/bootstrap.ps1 -WorkDir <公司指定独立数据目录>`；绑定缺损或冲突先恢复原配置或明确原目录，不重新初始化。不要打印 data/config.json、running.json 或登记文件，它们包含密钥。
 
 用户要求同一局域网直接自动连接、无需总控逐台确认时，先按 [references/operations.md](references/operations.md) 的 `lan-join-status` 核对实际网卡网段，再用 `lan-join-configure` 启用用户指定网络的精确 RFC1918 CIDR，使用 `lan-join-link` 生成公司连接链接。用户已授权启用时直接完成，不额外要求审批、邀请码或员工逐台确认。默认关闭此能力，不能扩大到其他 VPN 网卡、公网或任意网段。员工从匿名 clone 的当前完整 `main` 运行 `scripts/Join-Lan.ps1`，填写真实身份，生成本机独立设备密钥并回传心跳。详见 [references/deployment.md](references/deployment.md)；旧 v0.4.1 发布包不含该入口。
 
-完整连接链接以 GitHub `tree/main#worktrace-join=v1.` 开头，仅含公司、HTTPS 地址和公开证书，无管理令牌或设备秘密。普通仓库链接不含连接目标，不扫描局域网猜公司；公司实际链接不上传源码。该方式允许可信网段内的人自报身份，不等于核实真实姓名。首次默认不采集和不自动学习，已有离线或不同身份数据不能覆盖。管理接口继续仅本机回环，逐台设备仍以独立秘密认证。
+完整连接链接以 GitHub `tree/main#worktrace-join=v1.` 开头，仅含公司、HTTPS 地址和公开证书，无管理令牌或设备秘密；只在首次没有本机接入状态时需要，实际链接不上传源码。既有员工分控先从三个技能的 deployment.json 找原目录，再由该电脑 Codex 运行当前源码 `scripts/Connect-Node.ps1` 复用身份、恢复服务/MCP/登录启动和同步，不重复索要链接或登记。普通仓库链接即可取得[旧分控一次修复指令](https://raw.githubusercontent.com/zhoudebao6-art/worktrace-skills/main/prompts/repair-collector-connection.txt)；更新总控不会自动修复员工电脑，必须有该电脑执行通道才可代为运行。不扫描局域网或整个磁盘；离线保持离线，损坏配置先恢复，地址/证书变化受控迁移。
+
+LAN 首次接入默认配置当前用户登录启动（`-SkipLogonStartup` 可跳过），采集和自动学习默认关闭；连接恢复保持原开关。登录启动不代表关机、休眠或未登录也在线。该方式允许可信网段内的人自报身份，不等于核实真实姓名；已有不同身份数据不能覆盖。管理接口继续仅本机回环，逐台设备仍以独立秘密认证。
 
 需要预先登记时，按员工清单运行 `scripts/prepare-fleet.ps1`，将一份通用源码放入已有共享目录，把各自登记密钥和接入入口放进每台电脑独享目录。缺少真实清单或执行通道时只准备可运行环境并说明缺项，不能扫描整个局域网猜测员工归属或声称已部署其他电脑。
 

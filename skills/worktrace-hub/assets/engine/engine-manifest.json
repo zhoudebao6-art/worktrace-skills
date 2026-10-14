@@ -1,6 +1,6 @@
 {
   "format": "worktrace.source/1.0",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "files": [
     {
       "path": "Install-Skills.ps1",
@@ -58,6 +58,11 @@
       "size": 2983
     },
     {
+      "path": "scripts/Connect-Node.ps1",
+      "sha256": "fde3fa2039aec38009d0666457cb544e6474c085eff5d1a3a38fa92517dc4a11",
+      "size": 19719
+    },
+    {
       "path": "scripts/Ensure-Runtime.ps1",
       "sha256": "44a9468ac1719967e9affc3d1d007900347da3065e254ddd6e90e44ef745f787",
       "size": 1864
@@ -69,8 +74,8 @@
     },
     {
       "path": "scripts/Join-Lan.ps1",
-      "sha256": "150ffa3b08d5922df04bc51ebd6cf36ccc6de0634bf055f53f8f7b4bbb9dc037",
-      "size": 17749
+      "sha256": "5782ba28ec8ac155a375b54687b7183771303149b38012367e14059509e091a7",
+      "size": 22267
     },
     {
       "path": "scripts/Join-Node.ps1",
@@ -99,13 +104,13 @@
     },
     {
       "path": "scripts/skill-control.ps1",
-      "sha256": "6bb4a04caa33331af1e685a3a9471553bb25b790f87b6b4df97110803f3900c6",
-      "size": 1748
+      "sha256": "85eb29df9f85af3b6efb233b5af119b7fe6734c03abdcdcd9762735c6bb10511",
+      "size": 1925
     },
     {
       "path": "skills/worktrace-collector/SKILL.md",
-      "sha256": "6b4a40af6e2f4572ee590466104d3c2a49d3e2342bdccf6372873c3a3a7f0090",
-      "size": 7773
+      "sha256": "3121e57c4768d965570e75b728c9f51a6f6ccde06c594c9c300ef51ffca6fbf9",
+      "size": 8546
     },
     {
       "path": "skills/worktrace-collector/agents/openai.yaml",
@@ -119,8 +124,8 @@
     },
     {
       "path": "skills/worktrace-collector/references/operations.md",
-      "sha256": "2a28ad3d110a3a44d194050d7c5f2db79d2b87ea99611675ec84e6daca8fbe03",
-      "size": 6866
+      "sha256": "70febd861241d34bb9048d76966ef5daff33433641802734577122c6f820498a",
+      "size": 8180
     },
     {
       "path": "skills/worktrace-collector/references/performance.md",
@@ -129,18 +134,18 @@
     },
     {
       "path": "skills/worktrace-collector/scripts/control.ps1",
-      "sha256": "6bb4a04caa33331af1e685a3a9471553bb25b790f87b6b4df97110803f3900c6",
-      "size": 1748
+      "sha256": "85eb29df9f85af3b6efb233b5af119b7fe6734c03abdcdcd9762735c6bb10511",
+      "size": 1925
     },
     {
       "path": "skills/worktrace-evidence/SKILL.md",
-      "sha256": "0f15b145343527b08e4c9529205593c0b06a4d25d401c5e0511a445a10dfed12",
-      "size": 2624
+      "sha256": "c8c5662608b1c69cada18232d70738a6b43a68eed07e7c980939c88aabcc3f3f",
+      "size": 3327
     },
     {
       "path": "skills/worktrace-personal/SKILL.md",
-      "sha256": "52ade5cf10bd736defa092a1a454a785cb58df04022c221adec7bfa365f0ab5b",
-      "size": 4630
+      "sha256": "5c638ce01f75dda0cc275fdf392c4f67d79296204060b29b7bc5ef48b060bba9",
+      "size": 5357
     },
     {
       "path": "skills/worktrace-personal/agents/openai.yaml",
@@ -264,7 +269,7 @@
     },
     {
       "path": "src/protocol.mjs",
-      "sha256": "b47fb6a1daa2807ba91c78d7df1ae3a5b4fde0afe20224cdbc193f079aeafac6",
+      "sha256": "89a62546aad1451e2be0ecb32f1f85d3ecbe2b16c2f0b809e4f00cec1550c474",
       "size": 11581
     },
     {
@@ -294,8 +299,8 @@
     },
     {
       "path": "设置登录启动.ps1",
-      "sha256": "1f275a570a0823733c5b8d96cb07177b9905c84feaa2688051e6fa8c6d619755",
-      "size": 815
+      "sha256": "17a78c46a6b0a753bb7035a219b3aa3f33e79467cfbaa9c76fbfe39224fed7f1",
+      "size": 890
     },
     {
       "path": "连接Codex.ps1",

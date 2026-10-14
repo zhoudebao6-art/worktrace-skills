@@ -16,7 +16,7 @@ function fixture(t){
   const put=(path,text)=>{mkdirSync(dirname(join(root,path)),{recursive:true});writeFileSync(join(root,path),text);};
   const skills=['hub','collector','evidence','personal'].map(role=>`skills/worktrace-${role}/SKILL.md`);
   for(const path of skills)put(path,`---\nname: ${path.split('/')[1]}\ndescription: Synthetic fixture only.\n---\n`);
-  const source=['src/server.mjs','bridge/observe.ps1','public/index.html','Start.ps1','Tray.ps1','Install-Skills.ps1','连接Codex.ps1','设置登录启动.ps1','runtime/NODE-LICENSE.txt','scripts/provision-common.ps1','scripts/Ensure-Runtime.ps1','scripts/Configure-Learning.ps1','scripts/Join-Node.ps1','scripts/Join-WithInvite.ps1','scripts/Join-Lan.ps1','scripts/Initialize-OfflineNode.ps1','scripts/Offline-Handoff.ps1','scripts/Measure-CollectorPerformance.ps1','scripts/skill-control.ps1'];
+  const source=['src/server.mjs','bridge/observe.ps1','public/index.html','Start.ps1','Tray.ps1','Install-Skills.ps1','连接Codex.ps1','设置登录启动.ps1','runtime/NODE-LICENSE.txt','scripts/provision-common.ps1','scripts/Ensure-Runtime.ps1','scripts/Configure-Learning.ps1','scripts/Join-Node.ps1','scripts/Connect-Node.ps1','scripts/Join-WithInvite.ps1','scripts/Join-Lan.ps1','scripts/Initialize-OfflineNode.ps1','scripts/Offline-Handoff.ps1','scripts/Measure-CollectorPerformance.ps1','scripts/skill-control.ps1'];
   for(const path of source)put(path,'synthetic source\n');
   source.push(...skills.filter(path=>!path.includes('worktrace-hub')));
   const files=source.map(path=>{const bytes=readFileSync(join(root,path));put(mirror+'/'+path,bytes);return {path,size:bytes.length,sha256:createHash('sha256').update(bytes).digest('hex')};});
