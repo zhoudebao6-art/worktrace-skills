@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,rmSync,symlinkSync} from 'node:fs';
+import {mkdtempSync,mkdirSync,writeFileSync,readFileSync,rmSync,symlinkSync,utimesSync} from 'node:fs';
 import {join,resolve} from 'node:path';
 import {Store} from '../src/store.mjs';
 import {uuid,hash,sealBundle,openBundle} from '../src/protocol.mjs';
@@ -40,8 +40,12 @@ test('same bytes across extensions share one original but keep separate events; 
  const online=new FileEvidenceCollector({store:x.s,config:{...x.c,connection_mode:'hub'},dir:x.data,root});assert.throws(()=>online.configure({...defaultFilePolicy,enabled:true,roots:[x.docs]}),/4MiB/);
 });
 test('legacy typed originals can be reverted and reused without changing historical event hashes',async t=>{
- const x=fixture(t),file=join(x.docs,'legacy.txt');writeFileSync(file,'version A');await x.scan();await x.scan();const first=x.s.list().items[0];x.s.db.prepare('UPDATE file_versions SET mime=? WHERE sha256=?').run('text/plain',first.payload.file_sha256);
- writeFileSync(file,'version B');await x.scan();assert.equal((await x.scan()).saved,1);const second=x.s.list().items.find(e=>e.payload.previous_event_id===first.event_id);
- writeFileSync(file,'version A');await x.scan();assert.equal((await x.scan()).saved,1);const restored=x.s.list().items.find(e=>e.payload.previous_event_id===second.event_id);assert.equal(restored.payload.file_sha256,first.payload.file_sha256);assert.equal(x.s.list().items.find(e=>e.event_id===first.event_id).event_hash,first.event_hash);
- writeFileSync(join(x.docs,'copy.md'),'version A');await x.scan();assert.equal((await x.scan()).saved,1);assert.equal(x.s.db.prepare('SELECT COUNT(*) n FROM file_versions').get().n,2);
+ const x=fixture(t),file=join(x.docs,'legacy.txt');let modifiedAt=Date.now()-10000;
+ // Same-size rapid writes may share filesystem timestamps; this test covers
+ // version/MIME reuse, while unchanged-metadata reads use the periodic recheck.
+ const writeVersion=(path,text)=>{writeFileSync(path,text);const modified=new Date(modifiedAt+=2000);utimesSync(path,modified,modified);};
+ writeVersion(file,'version A');await x.scan();await x.scan();const first=x.s.list().items[0];x.s.db.prepare('UPDATE file_versions SET mime=? WHERE sha256=?').run('text/plain',first.payload.file_sha256);
+ writeVersion(file,'version B');await x.scan();assert.equal((await x.scan()).saved,1);const second=x.s.list().items.find(e=>e.payload.previous_event_id===first.event_id);
+ writeVersion(file,'version A');await x.scan();assert.equal((await x.scan()).saved,1);const restored=x.s.list().items.find(e=>e.payload.previous_event_id===second.event_id);assert.equal(restored.payload.file_sha256,first.payload.file_sha256);assert.equal(x.s.list().items.find(e=>e.event_id===first.event_id).event_hash,first.event_hash);
+ writeVersion(join(x.docs,'copy.md'),'version A');await x.scan();assert.equal((await x.scan()).saved,1);assert.equal(x.s.db.prepare('SELECT COUNT(*) n FROM file_versions').get().n,2);
 });
