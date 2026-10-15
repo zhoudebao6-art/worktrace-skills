@@ -17,7 +17,7 @@ jobs:
   source-and-tests:
     name: source-and-tests
     runs-on: windows-2022
-    timeout-minutes: 15
+    timeout-minutes: 30
     defaults:
       run:
         shell: pwsh
@@ -42,6 +42,11 @@ jobs:
           check-latest: false
       - name: Verify source, skill references and engine mirror
         run: node scripts/verify-source.mjs
+      - name: Build pinned Windows read-only codec and isolated fixtures
+        run: |
+          $nativeOutput = Join-Path $env:TEMP ('worktrace-native-ci-' + [guid]::NewGuid().ToString('N'))
+          ./scripts/build-wechat-reader.ps1 -OutputDirectory $nativeOutput -IncludeFixtures
+          "WORKTRACE_WECHAT_NATIVE_DIR=$nativeOutput" >> $env:GITHUB_ENV
       - name: Run synthetic tests
-        # Only *.test.mjs: no provisioning, desktop capture, browser or live model verification.
+        # Isolated SQLite/WAL and own fixture process only; no actual WeChat, desktop or models.
         run: node --test tests/*.test.mjs

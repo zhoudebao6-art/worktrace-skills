@@ -1,0 +1,19 @@
+请维护当前员工电脑已有的 WorkTrace 分控，升级到 v0.6.0，并在本机条件允许时准备微信数据库证据通道。先读取固定版本 https://github.com/zhoudebao6-art/worktrace-skills/blob/v0.6.0/docs/upgrade-v0.6.0.md 和 https://github.com/zhoudebao6-art/worktrace-skills/blob/v0.6.0/docs/wechat-database.md 。从 https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.6.0 匿名下载专用 worktrace-skills-v0.6.0.zip、SHA256SUMS.txt 和更新清单，放本机非系统盘新的源码目录，核验ZIP及.worktrace-source.json全部文件、内嵌engine-manifest。不要使用GitHub自动Source code.zip、开发电脑路径或其他版本的校验值；不要求GitHub登录。
+
+先读取本机collector/personal/evidence三技能deployment.json，核对唯一原运行目录、collector角色、实际服务PID/路径和版本、MCP及登录启动配置。此机不是总控；原离线且尚无总控时继续本地保存，不要求公司链接、同局域网或重新登记。不存在合法既有身份/数据库时停止覆盖升级并报告，不调用Initialize、Join或bootstrap创建新身份。多个绑定、本地受管文件修改、来源混合或新增路径冲突时保留现场，不强行覆盖。自动入口需要原版至少v0.5.2的目录/身份互斥能力，更早版本先走已验证的v0.5.2原路径升级流程，不绕过检查。
+
+按升级手册运行新包scripts/Upgrade-ExistingNode.ps1 -DeploymentRoot 原运行目录 -SourceEngine 新包skills/worktrace-hub/assets/engine -BackupDirectory 全新持久备份目录 -DryRun；原目录、源码和备份必须互不包含。保存并核验三个旧技能备份，先用新包Install-SharedSkills.ps1 -Role collector -SkillsDirectory 原技能目录 -Update更新技能；无共享收据但合法绑定原分控时显式加-AdoptDeployment，其他未知来源拒绝接管。这一步放在运行引擎替换前，因为旧绑定版本须与旧引擎一致；不补造收据或只改版本号。
+
+预检通过后用同样参数、不带-DryRun运行Upgrade-ExistingNode。脚本暂停原运行分控的学习与记录、等待idle、正常关闭自身服务和托盘、完整冷备并逐文件核验，然后在原路径更新所有受管程序，核对身份/stream/原事件canonical摘要/原件BLOB，再恢复原已授权开关。原停着则仍停着，原暂停则仍暂停，工作时段、应用/文件策略、离线模式、设备身份、失败检查点、high或xhigh强度、MCP/登录启动路径保留。下载与预检可在员工工作时进行，正式停机与冷备有维护间隔，不承诺零停机；不要在旁边并行运行另一套维护或同身份克隆。备份不是缓存，出错保留现场，不自动用旧库覆盖新增数据，不按node.exe进程名批量结束任务。
+
+服务脚本完成不等于技能/MCP完成。运行原路径Install-Skills.ps1 -Role collector -SkillsDirectory 原技能目录 -SkipMcp校正三技能绑定；只重连本WorkTrace MCP，分别核验API实际版本、engine-manifest、三技能绑定和MCP版本。原停机部署不擅自启动录制，应报告磁盘升级完成、运行验收待原计划启动。运行中的原服务读取worktrace_readiness或原Node的admin readiness，核对原始记录、个人总结、待处理与错误。升级期间不得发送微信或调用真实模型作为验收。
+
+微信通道是新增可选项，不能为了接通它重置或关闭原有UIA/文件采集。仅在这台员工电脑，用新包scripts/Configure-Wechat.ps1 -DeploymentRoot 原目录准备固定发布解析器；必要时给明确ReaderDirectory、本人AccountRoot和AccountId，多账号或识别不清时停在选择账号，不扫描其他账户。初次进程只读密钥准备使用-PrepareKeysWhenIdle，在既有告知和本次授权范围内自动检查空闲时机，不重复索取已提供的同意；没有这个时机先完成上述升级、保留原采集，报告通道待准备。不得注入微信、改源数据库、关闭微信、打印密钥或把访问材料上传GitHub/加入总结。
+
+用原Node/src/admin-cli.mjs --command wechat-probe --role collector --dir 原data做只读元数据探测，再wechat-status确认真实结果；探测不是正文入库、身份准确率或不卡顿证明。不支持当前微信结构、密钥未就绪或账号不符时保留旧采集并报告原因，不反复尝试全库复制/解密。验收账号和工作范围后才提交完整wechat-configure策略：enabled、interval_seconds=30、max_ms=1500、max_rows=150、capture_since为这次实际授权启用UTC时刻、excluded_conversations为已确认排除会话。仍遵守全局暂停/工作时段，不导入启用前或非工作时段内容，不因测试自动恢复用户暂停。
+
+数据库读取不调用LLM、不打开会话、不抢焦点、不发送消息。现有WorkTrace MCP重连后直接提供wechat_status/wechat_list_chats/wechat_read_chat，只查询WorkTrace已保存证据，无需重复注册；wechat_read_chat同时给account_id和conversation_id，不能按昵称猜会话。src/wechat-mcp.mjs --data 原data只是可选独立入口。旧微信发送MCP保持独立，本次不启动发送或自动接待。来源配置data/wechat-source.json仅含路径/账号，密钥profile保存在原root/private，不进入业务证据库或离线移交包。员工现场按授权测试会话核对私聊/群聊、稳定sender_id与方向、增量补漏、重复/撤回、暂停、工作时段、排除名单与应用响应。未知sender明确unknown；图片/语音/视频/文件仅有引用或缺口时不得说已看懂/已保存原件；数据库未落盘、已物理删除或未同步的历史不保证恢复。
+
+未来同步或移交接收端也须支持v0.6.0协议1.3；旧总控拒收时保留本地队列并报告，在真实总控电脑另行升级，不改造成旧事件、不清空失败数据。个人学习沿用原gpt-6.1-sol和强度，引用同账号同会话原始证据，区分原始观察、推断与人工声明，不把发出记录当送达/已读/业务完成。
+
+最终给出本机真实升级范围、实际版本、备份路径、原身份/事件/策略核验、运行/暂停状态，以及微信通道的准备/探测/启用/现场验收分别完成到哪一步。原服务可用而数据库通道尚不支持时明确这个边界，不声称全部消息已完整采集或已经替代员工。TEMP/TMP/TMPDIR和可再生缓存用D:\codex+；没有D盘才用目标部署旁的明确临时目录，不改系统环境、不把公司数据库当缓存。

@@ -2,6 +2,7 @@ import {SOFTWARE_VERSION} from './protocol.mjs';
 import {uuid,hash,canonical,assert,id,VERSION} from './protocol.mjs';
 import {validatePersonalPayload} from './learning-schema.mjs';
 import {defaultPolicy} from './collector.mjs';
+import {wechatPreview} from './wechat-schema.mjs';
 function init(s){s.db.exec(`
  CREATE TABLE IF NOT EXISTS personal_batches(batch_id TEXT PRIMARY KEY,digest TEXT NOT NULL,refs_json TEXT NOT NULL,request_id TEXT,status TEXT NOT NULL,result_event_id TEXT);
  CREATE TABLE IF NOT EXISTS personal_members(event_id TEXT PRIMARY KEY,batch_id TEXT NOT NULL);
@@ -12,7 +13,7 @@ const event=(s,eid)=>{const r=s.db.prepare('SELECT json FROM events WHERE event_
 // Schema preparation must not implicitly count all historical evidence.
 export {init as initLearning};
 const raw=e=>e.event_type!=='learning.summary';
-const preview=e=>({event_id:e.event_id,event_type:e.event_type,occurred_at:e.occurred_at,task_id:e.payload.task_id||null,case_id:e.context.case_id,app:e.app.process_name,window_title:e.app.window_title||'',preview:(e.payload.text||e.payload.content_text||e.payload.input_summary||'').slice(0,240),attachments:e.attachments,...(e.provenance?{provenance:e.provenance}:{})});
+const preview=e=>({event_id:e.event_id,event_type:e.event_type,occurred_at:e.occurred_at,task_id:e.payload.task_id||null,case_id:e.context.case_id,app:e.app.process_name,window_title:e.app.window_title||'',preview:(e.payload.text||e.payload.content_text||e.payload.input_summary||'').slice(0,240),attachments:e.attachments,...wechatPreview(e),...(e.provenance?{provenance:e.provenance}:{})});
 function selectEvidence(s,c,limit,initial){
  const refs=[...initial],members=[],groups=new Map();let selected=0;
  // Read bounded selection fields, not 1,000 complete document/draft bodies.
@@ -33,7 +34,7 @@ function selectEvidence(s,c,limit,initial){
  }
  const representative=refs.length;
  // Include prior saved file version for grounded change analysis, without consuming it again.
- for(const eid of [...refs]){const previous=event(s,eid)?.payload.previous_event_id;if(previous&&refs.length<120&&!refs.includes(previous))refs.push(previous);}
+ for(const eid of [...refs]){const p=event(s,eid)?.payload;const previous=p?.previous_event_id||p?.previous_revision_id;if(previous&&refs.length<120&&!refs.includes(previous))refs.push(previous);}
 const taskIds=new Set(refs.map(x=>event(s,x)?.payload.task_id).filter(Boolean));
  // Task origin, parent versions and feedback may precede this batch. Add context,
  // without marking that context newly analysed or silently consuming later work.

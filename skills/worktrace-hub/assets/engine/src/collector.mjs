@@ -30,8 +30,8 @@ export class Collector{
   child.on('error',()=>ended('observer-start-failed'));child.on('exit',()=>ended('observer-exited'));
  }
  tick(){const now=this.clock();if(!this.enabled)return;if(!inSchedule(this.policy,new Date(now))){this.state='工作时间外，采集休眠';this.stopChild();return;}if(!this.child){if(now>=this.restartAfter)this.launch();return;}if(now-this.lastSample>Math.max(45000,this.policy.interval_seconds*3000)){this.stopChild();this.deferRestart('observer-timeout');}}
- start(){if(this.enabled)return;assert(process.platform==='win32','桌面采集仅支持 Windows');this.enabled=true;this.onStateChange();this.session=uuid();this.lastDigest='';this.restartFailures=0;this.restartAfter=0;this.record('collector.started',{reason:'user-start'});this.tick();this.timer=setInterval(()=>{try{this.tick();}catch(e){this.onError(e.message);}},3000);this.timer.unref();}
+ start(){if(this.enabled)return;assert(process.platform==='win32','桌面采集仅支持 Windows');this.enabled=true;this.onStateChange({enabled:true});this.session=uuid();this.lastDigest='';this.restartFailures=0;this.restartAfter=0;this.record('collector.started',{reason:'user-start'});this.tick();this.timer=setInterval(()=>{try{this.tick();}catch(e){this.onError(e.message);}},3000);this.timer.unref();}
  stopChild(){if(this.child){const child=this.child;this.child=null;child.kill();}}
- stop(){this.onStateChange();const was=this.enabled;this.enabled=false;clearInterval(this.timer);this.stopChild();this.state='已暂停';if(was)this.record('collector.paused',{reason:'user-pause'});}
+ stop(){this.onStateChange({enabled:false});const was=this.enabled;this.enabled=false;clearInterval(this.timer);this.stopChild();this.state='已暂停';if(was)this.record('collector.paused',{reason:'user-pause'});}
  update(p){const checked=validatePolicy(p),enabled=this.enabled;this.stop();this.policy=checked;this.store.set('policy',this.policy);if(enabled)this.start();}
 }

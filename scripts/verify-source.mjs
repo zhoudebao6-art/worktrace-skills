@@ -6,8 +6,8 @@ import {execFileSync} from 'node:child_process';
 
 const mirror='skills/worktrace-hub/assets/engine';
 const manifestPath=mirror+'/engine-manifest.json';
-const sourceDirectories=['src','bridge','public','skills/worktrace-collector','skills/worktrace-evidence','skills/worktrace-personal'];
-const sourceFiles=['Start.ps1','Tray.ps1','Install-Skills.ps1','连接Codex.ps1','设置登录启动.ps1','runtime/NODE-LICENSE.txt','scripts/provision-common.ps1','scripts/Ensure-Runtime.ps1','scripts/Configure-Learning.ps1','scripts/Join-Node.ps1','scripts/Connect-Node.ps1','scripts/Join-WithInvite.ps1','scripts/Join-Lan.ps1','scripts/Initialize-OfflineNode.ps1','scripts/Offline-Handoff.ps1','scripts/Measure-CollectorPerformance.ps1','scripts/skill-control.ps1'];
+const sourceDirectories=['src','bridge','public','native/wechat-reader','skills/worktrace-collector','skills/worktrace-evidence','skills/worktrace-personal'];
+const sourceFiles=['Start.ps1','Tray.ps1','Install-Skills.ps1','连接Codex.ps1','设置登录启动.ps1','runtime/NODE-LICENSE.txt','scripts/provision-common.ps1','scripts/Ensure-Runtime.ps1','scripts/Configure-Learning.ps1','scripts/Join-Node.ps1','scripts/Connect-Node.ps1','scripts/Join-WithInvite.ps1','scripts/Join-Lan.ps1','scripts/Initialize-OfflineNode.ps1','scripts/Offline-Handoff.ps1','scripts/Measure-CollectorPerformance.ps1','scripts/skill-control.ps1','scripts/Upgrade-ExistingNode.ps1','scripts/Configure-Wechat.ps1','scripts/build-wechat-reader.ps1','runtime/wechat-reader-release.json'];
 const requiredFiles=['src/server.mjs','bridge/observe.ps1','public/index.html',...sourceFiles,...['hub','collector','evidence','personal'].map(role=>`skills/worktrace-${role}/SKILL.md`)];
 const sha256=bytes=>createHash('sha256').update(bytes).digest('hex');
 const sourcePath=path=>sourceFiles.includes(path)||sourceDirectories.some(dir=>path.startsWith(dir+'/'));
@@ -17,6 +17,7 @@ function containsAccessCredential(text){
   if(/"(?:invite_token|request_secret|device_token)"\s*:\s*"[A-Za-z0-9_-]{43}"/.test(text))return true;
   const pending=[document];while(pending.length){const value=pending.pop();if(!value||typeof value!=='object')continue;
     for(const [key,item] of Object.entries(value)){
+      if(key==='encrypted_keymap_base64'&&typeof item==='string'&&item.length)return true;
       if(['invite_token','request_secret','device_token'].includes(key)&&typeof item==='string'&&/^[A-Za-z0-9_-]{43}$/.test(item))return true;
       if(item&&typeof item==='object')pending.push(item);
     }
@@ -38,8 +39,8 @@ export function verifySource(root,{files=trackedFiles(root),maxFileBytes=5*1024*
   for(const path of paths){
     if(!validPath(path)){fail(`Unsafe tracked path: ${path}`);continue;}
     const name=posix.basename(path).toLowerCase(),parts=path.toLowerCase().split('/');
-    const forbidden=parts.some(part=>['data','self-enrollment','lan-enrollment','self-lan-enrollment','node_modules','__pycache__','runtime-cache','runtime-temp','.codex','.ssh'].includes(part))||
-      ['node.exe','deployment.json','enrollment.json','running.json','config.json','join.json','roster.json','hub.json','offline-identity.json','handoff-manifest.json','auth.json','.env','.git-credentials','invite.json','invitation.json','request.json','join-request.json','join-state.json'].includes(name)||
+    const forbidden=parts.some(part=>['data','private','self-enrollment','lan-enrollment','self-lan-enrollment','node_modules','__pycache__','runtime-cache','runtime-temp','.codex','.ssh'].includes(part))||
+      ['node.exe','deployment.json','enrollment.json','running.json','config.json','join.json','roster.json','hub.json','offline-identity.json','handoff-manifest.json','auth.json','wechat-source.json','wechat-profile.json','.env','.git-credentials','invite.json','invitation.json','request.json','join-request.json','join-state.json'].includes(name)||
       /\.(?:sqlite(?:3)?(?:-wal|-shm)?|db|pfx|p12|pem|key|wpack|wthandoff|enroll\.json|invite\.json|invitation\.json|request\.json|join-state\.json)$/i.test(name)||
       /(?:^|\.)(?:enrollment|request|invite|invitation|join-request|join-state)\.json\..+\.tmp$/i.test(name)||/^\.env\./.test(name)&&!name.endsWith('.example');
     if(forbidden)fail(`Production data, credential or generated file must not be tracked: ${path}`);

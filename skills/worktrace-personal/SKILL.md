@@ -31,6 +31,10 @@ description: 在联网或独立离线员工分控上用 WorkTrace MCP 总结个�
 
 外部事件带 provenance：ActivityWatch 只有活动元数据；Screenpipe OCR/UI 是可见文本，不是完整操作演示。来源记录、模型总结、人工核验声明分别保留；不能把模型旧结论重新当成独立原始证据。
 
+`chat.message` 是数据库来源的微信证据，按账号、稳定会话 ID、发送人 ID 与来源修订理解；不得把不同客户或群聊片段串成一次接待，也不把显示名相同当同一人。批次可能只有局部上下文，先看消息时间、方向、身份状态、撤回/修订及缺口，再按需用本地只读微信 MCP 的 `wechat_read_chat(account_id,conversation_id,...)` 补看已保存上下文；遵守截断标记并按 next_before 翻页。本次保存引用仍限领取批次，新增上下文不能冒充该批证据。`identity_status=unknown` 时发送人和方向未知，不靠话术猜人；群 ID 不是发言人，引用/转发内容中的人物不是实际 sender。本账号发出记录不证明本人手打、对方送达/已读或业务完成。同账号、同会话、非零 server_message_id 相同可能是跨分片或重建来源重复；保留 source_message_key 与修订证据，不当成员工重复回复。没有稳定服务器 ID 不按同文本合并，来源记录数不是唯一聊天消息数。
+
+微信媒体只有引用或 `not_collected` / `unavailable` / `unsupported` 状态时，明确尚未取得/核对原件，不能称已理解图片、语音或文件。采集不调用模型，复盘才使用本机既定模型预算；缺消息、未知发送人、工作时段/排除会话、历史覆盖与媒体缺口须进入总结。个人总结不会恢复未落本机数据库的历史。新增通道未启用或不兼容时继续分析原 UIA/文件证据，不擅自准备账号密钥、扩大范围或改变员工暂停。详细边界见 [微信数据库通道](https://github.com/zhoudebao6-art/worktrace-skills/blob/v0.6.0/docs/wechat-database.md)。
+
 服务已提供可选夜间执行器，由部署目录 scripts/Configure-Learning.ps1 启用；Skill 文字本身不是定时器。联网由总控队列调度，离线由服务按本地日期创建一次有界 personal.summarize 日任务，需实测任务与总结而不是只看 enabled。默认每日最多 6 次调用、每任务 3 批；失败和超时也消耗预算，无新证据即结束。本地任务来源与总控任务分开，不能伪造总控 job 或上传其回执。
 
 查看 worktrace_node_jobs 中分配给本机的任务。只有总控来源任务才使用 worktrace_reply_to_hub，明确这是分控 Codex 的分析，不冒充员工本人。每任务回复不可覆盖，后续用新任务。离线时问题与方法候选先留本地，不声称跨员工规则已经验证。未启用执行器时手动触发；有缺口、故障或待处理事项才报告。

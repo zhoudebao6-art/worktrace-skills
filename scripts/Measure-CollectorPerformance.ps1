@@ -55,6 +55,8 @@ if($status){
  $summary.capture_enabled=$status.collection.enabled
  $summary.learning_busy=$status.worker.busy
  $summary.file_scan_busy=$status.files.busy
+ $summary.wechat_read_busy=$status.wechat.busy
+ $summary.wechat_source_enabled=if($endpoint -eq 'status'){$status.wechat.policy.enabled}else{$status.wechat.enabled}
  if($endpoint -eq 'status'){
   $summary.counts=@{events=$status.stats.events;assets=$status.stats.assets;asset_bytes=$status.stats.asset_bytes;pending=$status.stats.pending;file_versions=$status.files.versions}
   $summary.file_policy=@{enabled=$status.files.policy.enabled;root_count=@($status.files.policy.roots).Count;extension_count=@($status.files.policy.extensions).Count;interval_seconds=$status.files.policy.interval_seconds;max_files_per_scan=$status.files.policy.max_files_per_scan;max_versions_per_scan=$status.files.policy.max_versions_per_scan}
@@ -73,6 +75,16 @@ foreach($name in @('worktrace.sqlite','worktrace.sqlite-wal','worktrace.sqlite-s
  if(Test-Path -LiteralPath $file -PathType Leaf){$sizes[$name]=(Get-Item -LiteralPath $file).Length}
 }
 $records=@{};$samples=New-Object 'Collections.Generic.List[object]';$watch=[Diagnostics.Stopwatch]::StartNew();$serviceExited=$false
+$wechatReader=$null;$wechatProfile=$null
+$wechatSource=Join-Path $data 'wechat-source.json'
+if(Test-Path -LiteralPath $wechatSource -PathType Leaf){
+ try{
+  $wechatBinding=Get-Content -LiteralPath $wechatSource -Raw -Encoding UTF8|ConvertFrom-Json
+  if($wechatBinding.format -eq 'worktrace.wechat-source/1.0' -and [IO.Path]::IsPathRooted($wechatBinding.reader_path) -and [IO.Path]::IsPathRooted($wechatBinding.profile_path)){
+   $wechatReader=[IO.Path]::GetFullPath($wechatBinding.reader_path);$wechatProfile=[IO.Path]::GetFullPath($wechatBinding.profile_path)
+  }
+ }catch{}
+}
 function Record-Sample($Process,[string]$Kind,[double]$Elapsed){
  $key=[string]$Process.ProcessId+':'+$Process.CreationDate.ToUniversalTime().Ticks
  $cpu=([double]$Process.KernelModeTime+[double]$Process.UserModeTime)/10000000
@@ -88,7 +100,11 @@ do{
  if(!$current -or $current.CreationDate -ne $created -or !(Test-CommandPath $current.CommandLine (Join-Path $root 'src\server.mjs'))){$serviceExited=$true;break}
  Record-Sample $current 'service' $watch.Elapsed.TotalSeconds
  foreach($child in @(Get-CimInstance Win32_Process -Filter ('ParentProcessId='+$serviceId) -OperationTimeoutSec 4)){
-  if($child.CreationDate -lt $created -or $child.Name -notin @('powershell.exe','pwsh.exe')){continue}
+  if($child.CreationDate -lt $created){continue}
+  if($wechatReader -and [string]::Equals([string]$child.ExecutablePath,$wechatReader,[StringComparison]::OrdinalIgnoreCase) -and (Test-CommandPath $child.CommandLine $wechatReader) -and (Test-CommandPath $child.CommandLine $wechatProfile)){
+   Record-Sample $child 'wechat_reader' $watch.Elapsed.TotalSeconds;continue
+  }
+  if($child.Name -notin @('powershell.exe','pwsh.exe')){continue}
   if(Test-CommandPath $child.CommandLine (Join-Path $root 'bridge\observe.ps1')){Record-Sample $child 'observer' $watch.Elapsed.TotalSeconds}
   elseif(Test-CommandPath $child.CommandLine (Join-Path $root 'bridge\extract-document.ps1')){Record-Sample $child 'document_parser' $watch.Elapsed.TotalSeconds}
  }
@@ -108,4 +124,4 @@ $bytes=[Text.Encoding]::UTF8.GetBytes(($report|ConvertTo-Json -Depth 20))
 $file=[IO.File]::Open($outputPath,[IO.FileMode]::CreateNew,[IO.FileAccess]::Write,[IO.FileShare]::None)
 try{$file.Write($bytes,0,$bytes.Length)}finally{$file.Dispose()}
 Write-Output ('诊断完成：'+$outputPath)
-Write-Output ('仅观测本服务及已核验的 observer/parser；'+$processes.Count+' 个进程，未改变记录或学习状态。')
+Write-Output ('仅观测本服务及已核验的 observer/parser/wechat_reader；'+$processes.Count+' 个进程，未改变记录或学习状态。')

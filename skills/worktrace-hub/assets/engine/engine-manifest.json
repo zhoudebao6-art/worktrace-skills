@@ -1,6 +1,6 @@
 {
   "format": "worktrace.source/1.0",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "files": [
     {
       "path": "Install-Skills.ps1",
@@ -33,6 +33,41 @@
       "size": 12155
     },
     {
+      "path": "native/wechat-reader/Fixture.cs",
+      "sha256": "b4c9eba9efa7d08a11301087d4c645d3dfde99b50cb086569bc84be6c9c369a2",
+      "size": 4202
+    },
+    {
+      "path": "native/wechat-reader/Native.cs",
+      "sha256": "66ef3f4da3fa13a8fca69b2228b9d0d04dee364c0361f5ce5fd118f5e988e676",
+      "size": 5376
+    },
+    {
+      "path": "native/wechat-reader/Profile.cs",
+      "sha256": "1d16546e9a08968df7e93c687e12a634c91e2659b5e5c123048ee5883ca0539d",
+      "size": 4691
+    },
+    {
+      "path": "native/wechat-reader/Reader.cs",
+      "sha256": "33fd3857f1dffc8c251a5b4e1d035705900be8ec99fac282078b591b4c54a5fc",
+      "size": 11343
+    },
+    {
+      "path": "native/wechat-reader/Setup.cs",
+      "sha256": "9a850649f19d8c024c513957742e7ec7fc1752dab44c9790f615e18abd46d1a4",
+      "size": 10536
+    },
+    {
+      "path": "native/wechat-reader/THIRD-PARTY-NOTICES.md",
+      "sha256": "6e19701120f568648ac01c03ec2052df9e05504bfb1b4486e2bffe1d3fbffd8b",
+      "size": 1892
+    },
+    {
+      "path": "native/wechat-reader/crypto_cng.c",
+      "sha256": "1643936d298727e808b18992da0ee5a6fac35e5385a61dfdbb573deddda68e46",
+      "size": 5496
+    },
+    {
       "path": "public/app.js",
       "sha256": "2d64dd7cbe29cf987194214a5e934749567168df9b7cd82e6d0afc7c45e95dc2",
       "size": 15214
@@ -53,9 +88,19 @@
       "size": 148217
     },
     {
+      "path": "runtime/wechat-reader-release.json",
+      "sha256": "ce4c3f4988587cbfc7fa9bb65481a597f443412d2d0b9939285535bc66321fae",
+      "size": 1482
+    },
+    {
       "path": "scripts/Configure-Learning.ps1",
       "sha256": "e03582e36317789e8d5e4393017500ff2f414b87ef8255480d8ca1a344a10835",
       "size": 3062
+    },
+    {
+      "path": "scripts/Configure-Wechat.ps1",
+      "sha256": "b4f84cd6e8fa37907a6d592925ddd6372991fcc3f176db19a25684ff6a3c9c4f",
+      "size": 9938
     },
     {
       "path": "scripts/Connect-Node.ps1",
@@ -89,13 +134,23 @@
     },
     {
       "path": "scripts/Measure-CollectorPerformance.ps1",
-      "sha256": "8e590deb11240439355746b93f219ee613af4822daa6465c168d24dffb19066d",
-      "size": 9691
+      "sha256": "4fa4e3a298894d28b6653da078cf9c1afcb23487d6e89d3035d11cc452421dc8",
+      "size": 10781
     },
     {
       "path": "scripts/Offline-Handoff.ps1",
       "sha256": "35b39c90314b900f75f87d973dd04a7edc6bceeda5bb739cde90b73689435243",
       "size": 2856
+    },
+    {
+      "path": "scripts/Upgrade-ExistingNode.ps1",
+      "sha256": "04a7696e4af63c4bb3e8c203a4c9370bfd23e2c7b22c7451d3d2da368595ba2e",
+      "size": 21996
+    },
+    {
+      "path": "scripts/build-wechat-reader.ps1",
+      "sha256": "853f51680c6a1f440f70c795f6e0265c7ef6423a19a2ce60f95defa82bda1f80",
+      "size": 5614
     },
     {
       "path": "scripts/provision-common.ps1",
@@ -109,8 +164,8 @@
     },
     {
       "path": "skills/worktrace-collector/SKILL.md",
-      "sha256": "37ab9e17f2cb0ddd52b59d24c3e0d3c62ea5c7b3dbafd06f3abb499551bdf167",
-      "size": 9725
+      "sha256": "a9e4b3626d1a9299bad55b4072eb3583f557a3ecb21633c3036ac288fc23e4a5",
+      "size": 12068
     },
     {
       "path": "skills/worktrace-collector/agents/openai.yaml",
@@ -144,8 +199,8 @@
     },
     {
       "path": "skills/worktrace-personal/SKILL.md",
-      "sha256": "8b651b688142bd81aed862a04e8e974215d8f2ae5b9a294e801d1e45d0caf5be",
-      "size": 6703
+      "sha256": "08a13b0e81fdd4bed3ae8f0a86d2f2db892a8c440fad546c607ae39eb6e9365b",
+      "size": 8437
     },
     {
       "path": "skills/worktrace-personal/agents/openai.yaml",
@@ -159,13 +214,13 @@
     },
     {
       "path": "src/admin-cli.mjs",
-      "sha256": "91dad3f1970e94571c3c94d881c812c92f66b80bf562caa3c385e7e4f1beb38a",
-      "size": 6326
+      "sha256": "65080e59e81f58f8bd1d381cbbdd29151cd443c2982ef7f5a9c48dc49c59b38b",
+      "size": 6546
     },
     {
       "path": "src/analysis.mjs",
-      "sha256": "2e0c1a7d1af7afe0a5d3e68af395adb70d03419cbb83fcdaf8362f16dba53717",
-      "size": 7424
+      "sha256": "b86b478f36b2fd8a3f65d8b7ad591346f6e54494413ed4a33d60b70edcb975fa",
+      "size": 7496
     },
     {
       "path": "src/candidates.mjs",
@@ -179,8 +234,8 @@
     },
     {
       "path": "src/collector.mjs",
-      "sha256": "7716615ccd48da47f8f53f9a817aefddf26aa9fb90bf69cee341f1068bf90086",
-      "size": 7496
+      "sha256": "bd4fa59e719f2d94ce36d67f3140e47ad65481e4ed2ee424c6e9bdeb31ecb881",
+      "size": 7525
     },
     {
       "path": "src/external-records.mjs",
@@ -214,8 +269,8 @@
     },
     {
       "path": "src/knowledge.mjs",
-      "sha256": "b401d616c236d721e232485d4b9bde5ebe6c71597c09ef6631cf40ec69541602",
-      "size": 18010
+      "sha256": "5b5026da638070d7339838a2b1ac4432882779a1ce4190fcff607da4a06707fd",
+      "size": 18830
     },
     {
       "path": "src/lan-join-client.mjs",
@@ -234,8 +289,8 @@
     },
     {
       "path": "src/learning.mjs",
-      "sha256": "49c34394208c1760a890aae48da794d380c805fb2c75467f9173dd4e50b84451",
-      "size": 15470
+      "sha256": "476901f7ffe561c4892db7980f54976a0166bc9bc1f191732b5c72921ce3121f",
+      "size": 15578
     },
     {
       "path": "src/local-api.mjs",
@@ -244,8 +299,8 @@
     },
     {
       "path": "src/mcp.mjs",
-      "sha256": "84cd38ae2bda305e20d2b6982161ffc4d32edac91c366287999c77f2f7f45ae3",
-      "size": 16901
+      "sha256": "e9123e4959d8503a6c7d60d9e05111904b6dcaecf3e40a8724dbf15b00604962",
+      "size": 17086
     },
     {
       "path": "src/messages.mjs",
@@ -254,8 +309,8 @@
     },
     {
       "path": "src/offline-handoff.mjs",
-      "sha256": "542b3a58244292cb6c04da5736a9da0e40604ae2e3a6bf1cddc6e5ecd412c022",
-      "size": 32933
+      "sha256": "edda7cdbdcfc30afc6dde2e619393d109fecd88993664c49c84098e9d7c65c75",
+      "size": 36198
     },
     {
       "path": "src/offline-identity.mjs",
@@ -269,13 +324,13 @@
     },
     {
       "path": "src/protocol.mjs",
-      "sha256": "c75d65be6041cf345018ede34720971ae8fa944ad51f67c55b4e21aa6bbe7bae",
-      "size": 11514
+      "sha256": "0914025380f7a98e5afee489b84a1886e31956f3a6a2c14445a8c5d6288218da",
+      "size": 12040
     },
     {
       "path": "src/readiness.mjs",
-      "sha256": "4a3c89a2c573cfab1b8466839a2c3cd3205f4adb3c4b1438d38096b412cb2722",
-      "size": 6864
+      "sha256": "8ec753ea73c61db5a1897daa7aa9fd09b8dbdb9c10600ed82ce678c5c85038d0",
+      "size": 7726
     },
     {
       "path": "src/report.mjs",
@@ -289,13 +344,48 @@
     },
     {
       "path": "src/server.mjs",
-      "sha256": "48cb3833d0d49f1e5cd1897ca2f2fdcd2d7e29ec6566ec1a747bf09cb85ca7dd",
-      "size": 36050
+      "sha256": "75c8f1a254df333720bd9a4713bbf8dcdb6d51973c275ce63f637a822f7f4cf0",
+      "size": 37674
     },
     {
       "path": "src/store.mjs",
-      "sha256": "2b44891ae2b288066caa7a5722da31a7f147af1ba583d0e32b6df3814d5c8cbe",
-      "size": 12052
+      "sha256": "3cb9fbe6966e2e08431bb4704d8307127f5209329fde386c00773094b57e37ea",
+      "size": 12332
+    },
+    {
+      "path": "src/upgrade-guard.mjs",
+      "sha256": "1985ee082ad8bf9281cefc0ae6b3d44a44c70869679edbd5c799cb8de52f1384",
+      "size": 2285
+    },
+    {
+      "path": "src/wechat-collector.mjs",
+      "sha256": "e0945cc15dfa3c0893e532952ec798e4a68c492286596dbaf57d30bf3ac6a188",
+      "size": 14410
+    },
+    {
+      "path": "src/wechat-incremental.mjs",
+      "sha256": "5e3859885b50efd2f68365ffc05e0ff3a3768fcf9701cc3126d67593ad900bc3",
+      "size": 14660
+    },
+    {
+      "path": "src/wechat-mcp.mjs",
+      "sha256": "137d683dcc7b077c217c09fe1a0028b06c7d0f956db16721064b2050f8f8c511",
+      "size": 3736
+    },
+    {
+      "path": "src/wechat-provider.mjs",
+      "sha256": "3d0328f26e44e867641053a68a8e38759bcf0a975db0af88e928d4ed1565b787",
+      "size": 26041
+    },
+    {
+      "path": "src/wechat-schema.mjs",
+      "sha256": "c7f7d441b9dc82962b29814c23c4b11753b38a4b382b60e386df6fcbb1700c51",
+      "size": 4613
+    },
+    {
+      "path": "src/wechat-store.mjs",
+      "sha256": "0b52466cf8a5b0252869e8921d259c757d1b620319e158535c3b83bc4064da4b",
+      "size": 8087
     },
     {
       "path": "src/work.mjs",
@@ -304,8 +394,8 @@
     },
     {
       "path": "src/worker.mjs",
-      "sha256": "82d26a21fc8bbfc5c20d455b44950450c8aaafe364539331dfb93ad99aecb947",
-      "size": 23510
+      "sha256": "6aaba31e76a8c87e9e5dffaaa98bea97ad92fd80cdd905dbd88f2b0b4f7d028f",
+      "size": 24496
     },
     {
       "path": "设置登录启动.ps1",

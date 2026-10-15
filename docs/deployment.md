@@ -6,7 +6,7 @@
 
 ## 1. 在指定总控电脑取源码和安装技能
 
-按 [下载与分发方法](download.md) 从公开的 [v0.4.0 Release](https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.4.0) 直接下载专用发布 ZIP 和 SHA256 校验文件，无需 Git、GitHub 账号或邀请；也可取得公司转发的同一原包。校验后解压到这台目标电脑的独立源码目录。示例源码目录为 `D:\WorkTraceSource`，应包含 `.worktrace-source.json`。不要用 GitHub 自动生成的 Source code ZIP 替代专用资产。
+按 [下载与分发方法](download.md) 从公开的 [v0.6.0 Release](https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.6.0) 直接下载专用发布 ZIP 和 SHA256 校验文件，无需 Git、GitHub 账号或邀请；也可取得公司转发的同一原包。校验后解压到这台目标电脑的独立源码目录。示例源码目录为 `D:\WorkTraceSource`，应包含 `.worktrace-source.json`。不要用 GitHub 自动生成的 Source code ZIP 替代专用资产。
 
 v0.3.0 新增外部来源事件规范 1.1，旧原生事件 1.0 仍可读取。涉及此类同步的总控和分控运行服务应一起升级；先备份完整 data，在独立目录验证。安装新 Skill 不会替换运行服务。旧 v0.2.1 发布及原校验值不变，升级细节见 [研究与优化报告](research-and-optimization.md)。
 

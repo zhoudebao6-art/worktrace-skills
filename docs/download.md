@@ -1,36 +1,36 @@
 # 其他电脑下载与使用
 
-当前固定发布为 v0.5.2，包含 LAN 首次接入、既有分控连接恢复、独立离线学习与本轮运行/移交修复。公开下载不需要 GitHub 账号。默认新部署 xhigh；已有 high/xhigh 原设置保持。
+当前固定发布为 v0.6.0，包含既有接入/离线功能及 Windows 微信只读增量通道；实际员工账号须另做本机验收。公开下载不需要 GitHub 账号。默认新部署 xhigh；已有 high/xhigh 原设置保持。
 
-已有部署按[更新清单与原路径升级](upgrade-v0.5.2.md)处理，Connect 只恢复连接，单独更新技能或运行 Connect 不会升级旧引擎。数据库、身份、链接和登录凭据不公开。
+已有部署按[更新清单与原路径升级](upgrade-v0.6.0.md)处理，Connect 只恢复连接，单独更新技能或运行 Connect 不会升级旧引擎。数据库、身份、链接和登录凭据不公开。
 
 ## 1. 在目标电脑直接下载并校验
 
-打开公开的 [v0.5.2 发布页面](https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.5.2)，无需登录即可下载。以下路径均指执行命令的目标电脑；不用访问开发电脑上的文件。
+打开公开的 [v0.6.0 发布页面](https://github.com/zhoudebao6-art/worktrace-skills/releases/tag/v0.6.0)，无需登录即可下载。以下路径均指执行命令的目标电脑；不用访问开发电脑上的文件。
 
 在发布页面的 Assets 下载这两个文件：
 
-- [worktrace-skills-v0.5.2.zip](https://github.com/zhoudebao6-art/worktrace-skills/releases/download/v0.5.2/worktrace-skills-v0.5.2.zip)
-- [SHA256SUMS.txt](https://github.com/zhoudebao6-art/worktrace-skills/releases/download/v0.5.2/SHA256SUMS.txt)
+- [worktrace-skills-v0.6.0.zip](https://github.com/zhoudebao6-art/worktrace-skills/releases/download/v0.6.0/worktrace-skills-v0.6.0.zip)
+- [SHA256SUMS.txt](https://github.com/zhoudebao6-art/worktrace-skills/releases/download/v0.6.0/SHA256SUMS.txt)
 
 这是带完整性清单的源码包，不是安装程序。不要用 GitHub 自动生成的 Source code ZIP 替代上述资产；专用包包含离线安装所需的 `.worktrace-source.json`。
 
 可以用浏览器下载，或在目标电脑的 PowerShell 执行：
 
 ```powershell
-$downloadDir = 'D:\WorkTraceDownloads\v0.5.2'
+$downloadDir = 'D:\WorkTraceDownloads\v0.6.0'
 New-Item -ItemType Directory -Path $downloadDir -Force | Out-Null
-curl.exe -L --fail --output (Join-Path $downloadDir 'worktrace-skills-v0.5.2.zip') 'https://github.com/zhoudebao6-art/worktrace-skills/releases/download/v0.5.2/worktrace-skills-v0.5.2.zip'
+curl.exe -L --fail --output (Join-Path $downloadDir 'worktrace-skills-v0.6.0.zip') 'https://github.com/zhoudebao6-art/worktrace-skills/releases/download/v0.6.0/worktrace-skills-v0.6.0.zip'
 if ($LASTEXITCODE -ne 0) { throw '源码包下载失败，停止安装。' }
-curl.exe -L --fail --output (Join-Path $downloadDir 'SHA256SUMS.txt') 'https://github.com/zhoudebao6-art/worktrace-skills/releases/download/v0.5.2/SHA256SUMS.txt'
+curl.exe -L --fail --output (Join-Path $downloadDir 'SHA256SUMS.txt') 'https://github.com/zhoudebao6-art/worktrace-skills/releases/download/v0.6.0/SHA256SUMS.txt'
 if ($LASTEXITCODE -ne 0) { throw '校验清单下载失败，停止安装。' }
 ```
 
 在下载目录校验，确认显示 `SHA256 校验通过` 后再解压：
 
 ```powershell
-$downloadDir = 'D:\WorkTraceDownloads\v0.5.2'
-$zipName = 'worktrace-skills-v0.5.2.zip'
+$downloadDir = 'D:\WorkTraceDownloads\v0.6.0'
+$zipName = 'worktrace-skills-v0.6.0.zip'
 $checksumLines = @(Get-Content -LiteralPath (Join-Path $downloadDir 'SHA256SUMS.txt') | Where-Object { $_ -match [regex]::Escape($zipName) })
 if ($checksumLines.Count -ne 1) { throw '校验清单缺少唯一对应记录。' }
 $expectedHash = ($checksumLines[0] -split '\s+')[0]
@@ -43,17 +43,17 @@ if ($actualHash -ne $expectedHash) { throw 'ZIP 校验失败，停止安装。' 
 'SHA256 校验通过'
 ```
 
-公司也可以下载一次后将这两个原文件放到员工可读取的局域网共享目录，例如 `\\HUB-PC\WorkTraceDownloads\v0.5.2`，由管理员维护、员工只读。局域网转发是可选方式，员工能够访问 GitHub 时可以直接下载。共享的是源码包和校验文件，不是公司数据库、个人总结、密钥或其他人的 Codex 登录文件。此步骤不创建共享或更改公司现有权限。
+公司也可以下载一次后将这两个原文件放到员工可读取的局域网共享目录，例如 `\\HUB-PC\WorkTraceDownloads\v0.6.0`，由管理员维护、员工只读。局域网转发是可选方式，员工能够访问 GitHub 时可以直接下载。共享的是源码包和校验文件，不是公司数据库、个人总结、密钥或其他人的 Codex 登录文件。此步骤不创建共享或更改公司现有权限。
 
-已有部署升级至 v0.5.2 见[本版更新清单与升级说明](upgrade-v0.5.2.md)，离线部署见[操作手册](offline-collector.md)。只更新 Skill 不会更新服务。旧发布保留，每版使用自身的专用 ZIP 和 SHA256 清单，不混用旧清单。
+已有部署升级至 v0.6.0 见[本版更新清单与升级说明](upgrade-v0.6.0.md)，离线部署见[操作手册](offline-collector.md)。只更新 Skill 不会更新服务。旧发布保留，每版使用自身的专用 ZIP 和 SHA256 清单，不混用旧清单。
 
 
 校验后解压到此前不存在的独立目录，再使用下面适合本机角色的入口。安装/初始化脚本会核验 `.worktrace-source.json` 与内含引擎清单。
 
 ```powershell
-$sourceDir = 'D:\WorkTraceSource-v0.5.2'
+$sourceDir = 'D:\WorkTraceSource-v0.6.0'
 if (Test-Path -LiteralPath $sourceDir) { throw '源码目标已存在，请选择新目录。' }
-Expand-Archive -LiteralPath 'D:\WorkTraceDownloads\v0.5.2\worktrace-skills-v0.5.2.zip' -DestinationPath $sourceDir
+Expand-Archive -LiteralPath 'D:\WorkTraceDownloads\v0.6.0\worktrace-skills-v0.6.0.zip' -DestinationPath $sourceDir
 ```
 
 ## 2. 匿名取得当前完整源码
@@ -116,7 +116,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File '<完整源码目录>\sc
 
 分控安装采集、个人学习和证据三个技能。用户指定的真实总控电脑改用 `-Role hub`，然后按 [总控部署手册](deployment.md) 与 `worktrace-hub` 技能准备服务。安装技能本身不启动记录、不初始化公司、不注册运行服务 MCP；下一次 Codex 对话发现新技能。直接使用 `Join-Lan.ps1` 时会完成所需分控技能和 MCP，不要求员工先单独安装。
 
-默认技能目录为当前用户 `.agents\skills`；自定义目录必须确实由 Codex 读取。共享安装用相同参数加 `-Update`。已有 Join 部署但无共享安装收据时，使用 `-Role collector -SkillsDirectory <原技能目录> -Update -AdoptDeployment`：脚本核验原部署绑定、引擎清单和旧技能文件，备份后更新，保留 `deployment.json`、原部署版本和本地附加配置。遇到未知来源、本地修改或目录链接时保留原状处理。更新技能不会升级既有运行服务、修改数据库或迁移离线身份；连接修复继续运行 Connect。服务升级另按 [v0.5.2 更新说明](upgrade-v0.5.2.md) 核验来源、空闲停机、完整冷备、升级和复验。
+默认技能目录为当前用户 `.agents\skills`；自定义目录必须确实由 Codex 读取。共享安装用相同参数加 `-Update`。已有 Join 部署但无共享安装收据时，使用 `-Role collector -SkillsDirectory <原技能目录> -Update -AdoptDeployment`：脚本核验原部署绑定、引擎清单和旧技能文件，备份后更新，保留 `deployment.json`、原部署版本和本地附加配置。遇到未知来源、本地修改或目录链接时保留原状处理。更新技能不会升级既有运行服务、修改数据库或迁移离线身份；连接修复继续运行 Connect。服务升级另按 [v0.6.0 更新说明](upgrade-v0.6.0.md) 核验来源、空闲停机、完整冷备、升级和复验。
 
 ## 5. 其他接入方式继续可用
 

@@ -20,9 +20,9 @@ git clone --branch main --single-branch https://github.com/zhoudebao6-art/worktr
 
 只安装技能时运行 `scripts/Install-SharedSkills.ps1 -Role collector`，总控使用 `-Role hub`；更新追加 `-Update`。脚本核验并备份旧版、保留部署绑定，不强行覆盖来源不明或本地修改的技能。技能安装不启动采集，也不会升级已绑定的运行服务。完整流程见 [下载使用手册](docs/download.md)。
 
-**让另一台电脑的 Codex 自己读取：** [化工案件员工独立离线分控完整指令](prompts/chemical-offline-collector.txt)（[纯文本地址](https://raw.githubusercontent.com/zhoudebao6-art/worktrace-skills/main/prompts/chemical-offline-collector.txt)）。v0.5.2 已包含无需总控的首次建档、本地有界学习、文档版本取证和完整加密移交；目标电脑直接部署发布版，无需现场开发。见 [离线分控操作手册](docs/offline-collector.md)。
+**让另一台电脑的 Codex 自己读取：** [化工案件员工独立离线分控完整指令](prompts/chemical-offline-collector.txt)（[纯文本地址](https://raw.githubusercontent.com/zhoudebao6-art/worktrace-skills/main/prompts/chemical-offline-collector.txt)）。v0.6.0 继续包含无需总控的首次建档、本地有界学习、文档版本取证和完整加密移交；目标电脑直接部署发布版，无需现场开发。见 [离线分控操作手册](docs/offline-collector.md)。
 
-v0.5.2 在已有白天性能优化之上，补齐重复启动防护、停机排空、同步原子处理、任务失败恢复、个人总结取样与完整移交逻辑核验。已有电脑必须更新运行服务和对应 Skill；更新清单、冷备、验收及回退见 [v0.5.2 更新说明](docs/upgrade-v0.5.2.md)，整体结构与故障检查见 [复查报告](docs/architecture-review-v0.5.2.md)。[最新升级 Codex 指令](prompts/upgrade-worktrace-v0.5.2.txt) 可直接交给员工电脑使用。公开仓库只保存通用源码、说明和合成测试，不保存公司工作数据。
+v0.6.0 增加 Windows 微信数据库只读增量通道，复用已有微信 MCP 查询名称，按账号、会话、发送人和消息修订保存证据。采集不调用模型、不切换窗口；原 UIA、文件取证与离线模式保留。需在员工电脑验证版本、账号与只读密钥，媒体本版记录状态，不能承诺全量历史或零卡顿。已有分控从 [v0.6.0 升级说明](docs/upgrade-v0.6.0.md) 和 [最新升级 Codex 指令](prompts/upgrade-worktrace-v0.6.0.txt) 原地升级；技术范围见 [微信数据库通道](docs/wechat-database.md)，发布验收见 [v0.6.0 验证报告](docs/validation-v0.6.0.md)。公开仓库只保存源码、说明与合成测试，发布资产另提供固定校验的原生读取器。
 
 历史验证记录：[v0.4.1 性能优化](docs/collector-performance.md)、[v0.4.0 离线验证](docs/validation-v0.4.md)、[v0.3.0 六项目研究](docs/research-and-optimization.md)。旧发布保留。
 

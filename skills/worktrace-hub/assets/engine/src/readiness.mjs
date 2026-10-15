@@ -33,7 +33,12 @@ export function readiness(store,config,{dir,status,query={},now=new Date()}){
   if(config.role==='collector'){
    if(!status.collection.enabled)add('capture_paused','info','采集当前暂停。','若为原有暂停状态应保持；需要记录时按已告知范围启动。');
    else if(!inSchedule(status.collection.policy,now))add('capture_outside_window','info','当前不在采集时段。','检查工作日、时区和时间设置。');
-   if(!status.collection.policy.content_processes.length&&!status.files?.policy?.enabled)add('metadata_only_scope','warning','未开启应用正文或文件版本取证。','窗口元数据不能还原详细方法；按实际软件配置并验收所需正文或指定工作目录。');
+   if(!status.collection.policy.content_processes.length&&!status.files?.policy?.enabled&&!status.wechat?.policy?.enabled)add('metadata_only_scope','warning','未开启应用正文或文件版本取证。','窗口元数据不能还原详细方法；按实际软件配置并验收所需正文或指定工作目录。');
+   if(status.wechat?.policy?.enabled){
+    if(status.wechat.last_error||status.wechat.discovery_errors?.length)add('wechat_source_degraded','warning','微信数据库来源读取不完整；已保留检查点。','检查只读适配、账号及密钥状态；不清空游标，不通过切换窗口补采。');
+    if(!status.wechat.last_success)add('wechat_no_success','warning','微信数据库采集尚无本次运行的成功记录。','先验证来源与实际工作时段的增量记录，不能把配置成功当作完整采集。');
+    add('wechat_coverage_limited','info','微信数据库仅覆盖已落库、可读且在授权范围的记录；媒体为状态元数据。','核对发送人未知、分片发现、历史复核进度与媒体缺口，不据此声称全量无遗漏。');
+   }
    if(config.connection_mode==='offline')add('offline_handoff_required','info','当前为独立离线分控，不与总控通信。','定期导出加密完整移交包；先 Inspect，再交给总控导入。');
    else if(status.sync.error)add('sync_error','warning',status.sync.error,'检查总控地址、网络、证书与设备登记；保留未确认数据。');
   }
@@ -46,5 +51,5 @@ export function readiness(store,config,{dir,status,query={},now=new Date()}){
   }
  }
  for(const [name,task] of Object.entries(status.runtime.tasks))if(task.last_error)add('runtime_task_error','warning',name+': '+task.last_error,'查看对应运行记录；保留检查点并修复原因后重试。');
- return {format:'worktrace.readiness/1.0',version:SOFTWARE_VERSION,role:config?.role||null,mode:config?.role==='collector'?(config.connection_mode||'hub'):config?.role||'unconfigured',runtime:status.runtime,storage,devices,findings,pagination:{limit,offset,total,has_more:offset+devices.length<total},limitations:['记录数与总结数不代表岗位已学会、客户已回复或业务已完成。','本报告不调用模型、不启动采集、不检查其他电脑的实时桌面。','latest_evidence_at 是已有事件时间，导入记录不证明本机采集当前健康。']};
+ return {format:'worktrace.readiness/1.0',version:SOFTWARE_VERSION,role:config?.role||null,mode:config?.role==='collector'?(config.connection_mode||'hub'):config?.role||'unconfigured',runtime:status.runtime,storage,wechat:status.wechat||null,devices,findings,pagination:{limit,offset,total,has_more:offset+devices.length<total},limitations:['记录数与总结数不代表岗位已学会、客户已回复或业务已完成。','本报告不调用模型、不启动采集、不检查其他电脑的实时桌面。','latest_evidence_at 是已有事件时间，导入记录不证明本机采集当前健康。']};
 }

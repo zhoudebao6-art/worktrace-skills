@@ -1,3 +1,5 @@
+import {WechatCollector} from './wechat-collector.mjs';
+import {listWechatChats,readWechatChat} from './wechat-store.mjs';
 import {readiness} from './readiness.mjs';
 import {personalDigest} from './personal-digest.mjs';
 import {acquireRuntimeLock,acquireIdentityLock,RuntimeTasks} from './runtime-lifecycle.mjs';
@@ -48,7 +50,7 @@ export function postSync(config,payload,{signal}={}){return new Promise((resolve
 export async function startApp({dir=process.env.WORKTRACE_DATA||join(root,'data'),port=Number(process.env.WORKTRACE_PORT||19220),open=false,workerRunner,syncTransport=postSync}={}){
  assert(!existsSync(join(dir,'REVIEW-ONLY.json')),'此目录仅供审阅，禁止初始化或启动为活跃分控；原主机使用显式 Recover 恢复入口');mkdirSync(dir,{recursive:true});const releaseDirectory=acquireRuntimeLock(dir),runtimeTasks=new RuntimeTasks(),cfgFile=join(dir,'config.json');
  let store,config=null,server,releaseIdentity=null,closing=false,closePromise=null,runningUrl=null,setupInProgress=false;
- const token=secret();let collector=null,hub=null,syncing=false,lastSync=null,lastError='',timer,workerTimer,worker=null,fileCollector=null,fileTimer=null,handoffBusy=false,syncController=null;
+ const token=secret();let collector=null,hub=null,syncing=false,lastSync=null,lastError='',timer,workerTimer,worker=null,fileCollector=null,fileTimer=null,wechatCollector=null,wechatTimer=null,handoffBusy=false,syncController=null;
  try{
  config=existsSync(cfgFile)?JSON.parse(readFileSync(cfgFile,'utf8')):null;assert(!config||['hub','collector'].includes(config.role),'配置角色无效，请恢复原配置而非重新初始化');
  if(config?.role==='collector'){assert(config.host_binding===hash(config.org_id+':'+hostname()),'此运行数据目录属于另一台电脑，请用独立登记文件重新配置');releaseIdentity=await acquireIdentityLock(config);}
@@ -59,7 +61,7 @@ export async function startApp({dir=process.env.WORKTRACE_DATA||join(root,'data'
   catch(error){store.db.exec('ROLLBACK TO SAVEPOINT collector_setup');store.db.exec('RELEASE SAVEPOINT collector_setup');if(configWritten)unlinkSync(cfgFile);throw error;}
  }
  function attachWorker(){if(!worker)worker=new LearningWorker({store,config,dir,...(workerRunner?{runner:workerRunner}:{})});}
- function attachCollector(){assert(config.host_binding===hash(config.org_id+':'+hostname()),'此运行数据目录属于另一台电脑，请用独立登记文件重新配置');collector=new Collector({store,config,dir,root,onStateChange:()=>fileCollector?.invalidate(),onError:m=>{lastError=m;}});fileCollector=new FileEvidenceCollector({store,config,dir,root,isActive:()=>!!collector?.enabled});}
+ function attachCollector(){assert(config.host_binding===hash(config.org_id+':'+hostname()),'此运行数据目录属于另一台电脑，请用独立登记文件重新配置');collector=new Collector({store,config,dir,root,onStateChange:state=>{fileCollector?.invalidate();wechatCollector?.globalState(state.enabled);},onError:m=>{lastError=m;}});fileCollector=new FileEvidenceCollector({store,config,dir,root,isActive:()=>!!collector?.enabled});wechatCollector=new WechatCollector({store,config,dir,getCollector:()=>collector,isActive:()=>!closing&&!handoffBusy});}
  async function listenHub(){if(hub||config?.role!=='hub')return;initInvitations(store);initLanJoin(store);const allowEnrollment=createEnrollmentLimiter(),allowLanEnrollment=createEnrollmentLimiter();hub=https.createServer({pfx:readFileSync(join(dir,'hub.pfx')),passphrase:config.cert_password},async(req,res)=>{
   try{assert(!closing,'service_stopping');
    if(req.url==='/v1/lan/enroll'){
@@ -91,7 +93,7 @@ export async function startApp({dir=process.env.WORKTRACE_DATA||join(root,'data'
    sent+=batch.events.length;lastSync=new Date().toISOString();lastError='';if(!batch.events.length||store.stats().pending===0)break;
   }return {sent};}catch(error){lastError=error.message;return {error:error.message};}finally{syncing=false;syncController=null;}
  }
- function status(){return {configured:!!config,runtime:runtimeTasks.snapshot(),role:config?.role||null,org_name:config?.org_name,org_id:config?.org_id,employee_id:config?.employee_id,employee_name:config?.employee_name,device_id:config?.device_id,hub_url:config?.hub_url,connection_mode:config?.connection_mode||(config?.role==='collector'?'hub':null),ips:config?.connection_mode==='offline'?['127.0.0.1']:ips(),stats:store.stats(),learning:learningStatus(store,config),worker:worker?.status()||null,devices:config?.role==='hub'?store.devices():[],collection:{enabled:!!collector?.enabled,state:collector?.state||'未启用采集',policy:collector?.policy||store.get('policy')||defaultPolicy,last_sample:collector?.lastSample||null},files:fileCollector?.status()||null,sync:{mode:config?.connection_mode==='offline'?'offline':'network',state:config?.connection_mode==='offline'?'离线记录，等待人工移交':null,running:syncing,last_success:lastSync,error:lastError},protocol:'1.2',supported_protocols:['1.0','1.1','1.2'],version:SOFTWARE_VERSION};}
+ function status(){return {configured:!!config,runtime:runtimeTasks.snapshot(),role:config?.role||null,org_name:config?.org_name,org_id:config?.org_id,employee_id:config?.employee_id,employee_name:config?.employee_name,device_id:config?.device_id,hub_url:config?.hub_url,connection_mode:config?.connection_mode||(config?.role==='collector'?'hub':null),ips:config?.connection_mode==='offline'?['127.0.0.1']:ips(),stats:store.stats(),learning:learningStatus(store,config),worker:worker?.status()||null,devices:config?.role==='hub'?store.devices():[],collection:{enabled:!!collector?.enabled,state:collector?.state||'未启用采集',policy:collector?.policy||store.get('policy')||defaultPolicy,last_sample:collector?.lastSample||null},files:fileCollector?.status()||null,wechat:wechatCollector?.status()||null,sync:{mode:config?.connection_mode==='offline'?'offline':'network',state:config?.connection_mode==='offline'?'离线记录，等待人工移交':null,running:syncing,last_success:lastSync,error:lastError},protocol:'1.3',supported_protocols:['1.0','1.1','1.2','1.3'],version:SOFTWARE_VERSION};}
  server=http.createServer(async(req,res)=>{
   try{
    assert(!closing,'service_stopping');assert(['127.0.0.1','localhost'].includes(String(req.headers.host||'').split(':')[0]),'拒绝非本机管理请求');const u=new URL(req.url,'http://127.0.0.1');
@@ -100,7 +102,10 @@ export async function startApp({dir=process.env.WORKTRACE_DATA||join(root,'data'
    assert(safeEqual(req.headers.authorization,'Bearer '+token),'管理授权失效，请从启动程序重新打开面板');if(req.headers.origin)assert(req.headers.origin===`http://127.0.0.1:${server.address().port}`||req.headers.origin===`http://localhost:${server.address().port}`,'拒绝跨来源请求');
    // The visible tray polls frequently and only needs live flags. Keep this
    // path independent of history counts, JSON parsing, job queues and blobs.
-   if(req.method==='GET'&&u.pathname==='/api/status/brief'){json(res,200,{configured:!!config,runtime:runtimeTasks.snapshot(),role:config?.role||null,version:SOFTWARE_VERSION,collection:{enabled:!!collector?.enabled,state:collector?.state||'未启用采集',last_sample:collector?.lastSample||null},worker:{busy:!!worker?.busy},files:{busy:!!fileCollector?.busy}});return;}
+   if(req.method==='GET'&&u.pathname==='/api/status/brief'){json(res,200,{configured:!!config,runtime:runtimeTasks.snapshot(),role:config?.role||null,version:SOFTWARE_VERSION,collection:{enabled:!!collector?.enabled,state:collector?.state||'未启用采集',last_sample:collector?.lastSample||null},worker:{busy:!!worker?.busy},files:{busy:!!fileCollector?.busy},wechat:{busy:!!wechatCollector?.busy,enabled:!!wechatCollector?.policy.enabled}});return;}
+   if(req.method==='GET'&&u.pathname==='/api/wechat/status'){json(res,200,wechatCollector?.status()||{state:'not_collector',source:'worktrace_database'});return;}
+   if(req.method==='GET'&&u.pathname==='/api/wechat/list-chats'){json(res,200,listWechatChats(store,config,Object.fromEntries(u.searchParams)));return;}
+   if(req.method==='GET'&&u.pathname==='/api/wechat/read-chat'){json(res,200,readWechatChat(store,config,Object.fromEntries(u.searchParams)));return;}
    if(req.method==='GET'&&u.pathname==='/api/status'){json(res,200,status());return;}
    if(req.method==='GET'&&u.pathname==='/api/readiness'){json(res,200,readiness(store,config,{dir,status:status(),query:Object.fromEntries(u.searchParams)}));return;}
    if(req.method==='GET'&&u.pathname==='/api/invitations'){json(res,200,listInvitations(store,config));return;}
@@ -147,7 +152,7 @@ export async function startApp({dir=process.env.WORKTRACE_DATA||join(root,'data'
    if(u.pathname==='/api/invitations/revoke'){json(res,200,revokeInvitation(store,config,b));return;}
    if(u.pathname==='/api/lan-join/configure'){json(res,200,configureLanJoin(store,config,b));return;}
    if(u.pathname==='/api/handoff/export'){
-    assert(config.role==='collector'&&typeof b.finish_pilot==='boolean','仅分控可生成完整移交包');assert(!worker.busy&&!fileCollector?.busy&&!syncing,'采集解析或学习正在完成，请暂停后等待再导出');
+    assert(config.role==='collector'&&typeof b.finish_pilot==='boolean','仅分控可生成完整移交包');assert(!worker.busy&&!fileCollector?.busy&&!wechatCollector?.busy&&!syncing,'采集解析或学习正在完成，请暂停后等待再导出');
     const previous={capture_enabled:!!collector.enabled,worker_policy:worker.policy};let exported=null,failure=null;handoffBusy=true;
     try{store.set('handoff_previous_state',previous);collector.stop();store.set('capture_enabled',false);worker.configure({...previous.worker_policy,paused:true});exported=await createOfflineHandoff(store,config,{output:b.output,password:b.password,source:{base_version:SOFTWARE_VERSION,...(existsSync(join(root,'engine-manifest.json'))?{source_sha256:hash(readFileSync(join(root,'engine-manifest.json')))}:{})}});}
     catch(error){failure=error;}
@@ -186,6 +191,8 @@ export async function startApp({dir=process.env.WORKTRACE_DATA||join(root,'data'
    if(u.pathname==='/api/work'){assert(['task.created','task.transition','artifact.version','artifact.feedback'].includes(b.event_type),'业务事件类型无效');json(res,200,addWork(store,config,b.event_type,b.payload,b.case_id));return;}
    if(u.pathname==='/api/devices'){assert(config.role==='hub','仅管理端可登记');assert(str(b.employee_id,80)&&/^[\p{L}\p{N}_.-]+$/u.test(b.employee_id)&&str(b.employee_name,100)&&b.employee_name.trim()&&str(b.label,100)&&b.label.trim(),'请填写员工编号、姓名及电脑名称');const d={device_id:uuid(),org_id:config.org_id,employee_id:b.employee_id,employee_name:b.employee_name.trim(),label:b.label.trim()};const deviceToken=secret();store.addDevice(d,deviceToken);json(res,200,{format:'worktrace.enrollment/1.0',org_name:config.org_name,...d,hub_url:config.hub_url,ca_pem:config.ca_pem,device_token:deviceToken});return;}
    if(u.pathname==='/api/revoke'){assert(config.role==='hub'&&id(b.device_id),'无效设备');store.db.prepare('UPDATE devices SET revoked=1 WHERE device_id=?').run(b.device_id);store.audit('device.revoke',b.device_id);json(res,200,{ok:true});return;}
+   if(u.pathname==='/api/wechat/probe'){assert(wechatCollector,'仅分控配置微信来源');assert(!wechatCollector.busy&&!runtimeTasks.snapshot().tasks.wechat?.running,'wechat_reader_busy');json(res,200,await runtimeTasks.run('wechat',()=>wechatCollector.probe()));return;}
+   if(u.pathname==='/api/wechat/configure'){assert(wechatCollector,'仅分控配置微信来源');json(res,200,wechatCollector.configure(b));return;}
    if(u.pathname==='/api/policy'){assert(collector,'仅采集端可设置');collector.update(validatePolicy(b));json(res,200,{ok:true});return;}
    if(u.pathname==='/api/capture'){assert(collector&&typeof b.enabled==='boolean','无效采集状态');if(b.enabled)collector.start();else collector.stop();store.set('capture_enabled',b.enabled);json(res,200,status());return;}
    if(u.pathname==='/api/sync'){json(res,200,await synchronize());return;}
@@ -199,12 +206,13 @@ export async function startApp({dir=process.env.WORKTRACE_DATA||join(root,'data'
  const url=`http://127.0.0.1:${server.address().port}/#key=${token}`;runningUrl=url;atomicJSON(join(dir,'running.json'),{pid:process.pid,port:server.address().port,url});
  if(config)attachWorker();timer=setInterval(()=>runtimeTasks.launch('sync',syncOnce),30000);timer.unref();
  workerTimer=setInterval(()=>{if(worker&&!handoffBusy)runtimeTasks.launch('worker',()=>worker.tick());},5000);workerTimer.unref();
+ wechatTimer=setInterval(()=>{if(wechatCollector&&!handoffBusy)runtimeTasks.launch('wechat',()=>wechatCollector.tick());},5000);wechatTimer.unref();
  fileTimer=setInterval(()=>{if(fileCollector&&!handoffBusy)runtimeTasks.launch('files',()=>fileCollector.scan());},5000);fileTimer.unref();
- return {server,store,get config(){return config;},get collector(){return collector;},get worker(){return worker;},get fileCollector(){return fileCollector;},token,url,dir,synchronize,close,status};
+ return {server,store,get config(){return config;},get collector(){return collector;},get worker(){return worker;},get fileCollector(){return fileCollector;},get wechatCollector(){return wechatCollector;},token,url,dir,synchronize,close,status};
  }catch(error){try{await close();}catch(cleanupError){throw new AggregateError([error,cleanupError],error.message+'; startup_cleanup_failed');}throw error;}
  function close(){
-  if(closePromise)return closePromise;closing=true;runtimeTasks.stop();clearInterval(timer);clearInterval(workerTimer);clearInterval(fileTimer);
-  const stopErrors=[];for(const stop of [()=>syncController?.abort(),()=>fileCollector?.stop(),()=>worker?.stop(),()=>collector?.stop()])try{stop();}catch(error){stopErrors.push(error);}
+  if(closePromise)return closePromise;closing=true;runtimeTasks.stop();clearInterval(timer);clearInterval(workerTimer);clearInterval(fileTimer);clearInterval(wechatTimer);
+  const stopErrors=[];for(const stop of [()=>syncController?.abort(),()=>fileCollector?.stop(),()=>wechatCollector?.stop(),()=>worker?.stop(),()=>collector?.stop()])try{stop();}catch(error){stopErrors.push(error);}
   const stopServer=s=>!s?.listening?Promise.resolve():new Promise(resolve=>s.close(()=>resolve()));
   closePromise=(async()=>{try{
    await Promise.all([runtimeTasks.drain(),stopServer(server)]);await stopServer(hub);

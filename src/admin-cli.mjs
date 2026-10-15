@@ -8,6 +8,9 @@ export async function admin({command,role,dir=join(root,'data'),input,output,rec
  const data=input?JSON.parse(readFileSync(input,'utf8').replace(/^\uFEFF/,'')):{};
  const status=await localApi(dir,'status');if(status.configured&&status.role!==role)throw Error('已配置角色与 Skill 角色不一致，不能覆盖初始化');
  if(command==='status')return status;
+ if(command==='wechat-status')return localApi(dir,'wechat/status');
+ if(command==='wechat-probe')return localApi(dir,'wechat/probe',{});
+ if(command==='wechat-configure')return localApi(dir,'wechat/configure',data);
  if(command==='readiness')return localApi(dir,'readiness?'+new URLSearchParams(data));
  if(command==='shutdown')return localApi(dir,'shutdown',{});
  if(command==='init'){

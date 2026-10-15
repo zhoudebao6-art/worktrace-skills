@@ -1,9 +1,10 @@
 import { createHash, randomUUID, randomBytes, scryptSync, createCipheriv, createDecipheriv } from 'node:crypto';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import {validatePersonalPayload} from './learning-schema.mjs';
+import {validateWechatPayload} from './wechat-schema.mjs';
 export const VERSION='1.0';
 export const EXTERNAL_VERSION='1.1';
-export const SOFTWARE_VERSION='0.5.2';
+export const SOFTWARE_VERSION='0.6.0';
 export const MAX_ASSET=2*1024*1024, MAX_BATCH=50, MAX_ARCHIVE=100*1024*1024;
 export const uuid=()=>randomUUID();
 export const hash=b=>createHash('sha256').update(b).digest('hex');
@@ -16,8 +17,9 @@ export function utc(v){return typeof v==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{
 export function validateEvent(e){
  const fields=['schema_version','event_id','org_id','device_id','employee_id','stream_id','sequence','session_id','occurred_at','timezone','event_type','collector_version','policy_hash','app','context','payload','attachments'];
  keys(e,[...fields,'provenance'],fields);
- assert([VERSION,EXTERNAL_VERSION,'1.2'].includes(e.schema_version),'不支持的数据规范版本');for(const k of ['event_id','org_id','device_id','stream_id','session_id'])assert(id(e[k]),'无效编号: '+k);
+ assert([VERSION,EXTERNAL_VERSION,'1.2','1.3'].includes(e.schema_version),'不支持的数据规范版本');for(const k of ['event_id','org_id','device_id','stream_id','session_id'])assert(id(e[k]),'无效编号: '+k);
  assert((e.schema_version==='1.2')===(e.event_type==='document.version'),'文件证据必须使用 1.2 规范');
+ assert((e.schema_version==='1.3')===(e.event_type==='chat.message'),'微信消息必须使用 1.3 规范');
  if(e.schema_version===EXTERNAL_VERSION){
   assert(e.event_type==='activity.snapshot'&&e.provenance,'1.1 事件仅用于带来源的外部活动记录');
   const p=e.provenance;
@@ -32,12 +34,13 @@ export function validateEvent(e){
  assert(str(e.employee_id,80)&&/^[\p{L}\p{N}_.-]+$/u.test(e.employee_id),'无效员工编号');
  assert(Number.isSafeInteger(e.sequence)&&e.sequence>0,'无效序列号');assert(utc(e.occurred_at),'时间必须为 UTC 毫秒格式');
  assert(str(e.timezone,100)&&e.timezone.length>0,'缺少时区');try{new Intl.DateTimeFormat('en',{timeZone:e.timezone});}catch{throw new Error('无效时区');}
- assert(['activity.snapshot','collector.started','collector.paused','collector.gap','task.created','task.transition','artifact.version','artifact.feedback','learning.summary','document.version'].includes(e.event_type),'未知事件类型');
+ assert(['activity.snapshot','collector.started','collector.paused','collector.gap','task.created','task.transition','artifact.version','artifact.feedback','learning.summary','document.version','chat.message'].includes(e.event_type),'未知事件类型');
  assert(str(e.collector_version,40)&&/^[a-f0-9]{64}$/.test(e.policy_hash),'版本或采集策略摘要无效');
  keys(e.app,['process_name','window_title']);assert(str(e.app.process_name,100)&&str(e.app.window_title,500),'应用字段过长');
  keys(e.context,['case_id','conversation_id','sender_id','identity_source']);for(const k of ['case_id','conversation_id','sender_id'])assert(e.context[k]===null||str(e.context[k],160),'上下文无效');
  assert(e.context.identity_source==='device_assignment','人员归属来源无效');
- if(e.event_type==='learning.summary'){validatePersonalPayload(e.payload);assert(e.attachments.length===0,'总结不得混入原始附件');}
+ if(e.event_type==='chat.message'){validateWechatPayload(e.payload);assert(e.event_id===e.payload.revision_id&&e.context.conversation_id===e.payload.message.conversation_id&&e.context.sender_id===e.payload.message.sender_id,'微信事件身份不一致');assert(e.attachments.length===0,'微信媒体状态与截图不可混淆');}
+ else if(e.event_type==='learning.summary'){validatePersonalPayload(e.payload);assert(e.attachments.length===0,'总结不得混入原始附件');}
  else if(e.event_type==='document.version'){
   const p=e.payload;keys(p,['file_sha256','path','extension','mime','size','modified_at','previous_event_id','text','parser','parser_version','capture_status','gaps']);
   assert(/^[a-f0-9]{64}$/.test(p.file_sha256)&&str(p.path,2000)&&p.path.length>0&&['.txt','.md','.csv','.pdf','.docx','.xlsx'].includes(p.extension)&&str(p.mime,160),'文件来源无效');

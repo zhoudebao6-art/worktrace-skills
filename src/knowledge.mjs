@@ -49,7 +49,8 @@ function readers(s,scope){
   if(!id(eid))return null;
   if(cache.has(eid))return cache.get(eid);
   const r=s.db.prepare(`SELECT event_id,event_type,occurred_at,hash,
-   json_extract(json,'$.payload.source_kind') source_kind,json_extract(json,'$.payload.reason_source') reason_source
+   json_extract(json,'$.payload.source.account_id') wechat_account_id,json_extract(json,'$.context.conversation_id') conversation_id,json_extract(json,'$.context.sender_id') sender_id,json_extract(json,'$.payload.message.direction') direction,json_extract(json,'$.payload.message.identity_status') identity_status,
+  json_extract(json,'$.payload.source_kind') source_kind,json_extract(json,'$.payload.reason_source') reason_source
    FROM events WHERE event_id=? AND ${whereScope} AND event_type<>'learning.summary'`).get(eid,...scopeArgs(scope));
   const value=r?{event_id:r.event_id,event_type:r.event_type,occurred_at:r.occurred_at,event_hash:r.hash,...rawBasis(r.event_type,r.source_kind,r.reason_source),read:reference(scope,'raw',r.event_id)}:null;
   cache.set(eid,value);return value;
@@ -77,6 +78,7 @@ function rows(s,scope,layer,after,limit,inclusive=false){
   json_extract(json,'$.payload.evidence_event_ids[0]') ref_0,json_extract(json,'$.payload.evidence_event_ids[1]') ref_1,
   json_array_length(json_extract(json,'$.payload.evidence_event_ids')) evidence_count,
   json_array_length(json_extract(json,'$.attachments')) attachment_count,
+  json_extract(json,'$.payload.source.account_id') wechat_account_id,json_extract(json,'$.context.conversation_id') conversation_id,json_extract(json,'$.context.sender_id') sender_id,json_extract(json,'$.payload.message.direction') direction,json_extract(json,'$.payload.message.identity_status') identity_status,
   json_extract(json,'$.payload.source_kind') source_kind,json_extract(json,'$.payload.reason_source') reason_source
   FROM events INDEXED BY ${personal?'knowledge_personal':'knowledge_scope'} WHERE ${condition}
   ORDER BY occurred_at DESC,event_id DESC LIMIT ?`).all(...args,limit+1);
@@ -96,7 +98,7 @@ function parseCursor(value,binding){
 function matching(terms,fields){const text=normalize(fields.filter(x=>typeof x==='string').join('\n'));return terms.every(term=>text.includes(term));}
 function rawPreview(r,scope){
  const fields=['text','content_text','input_summary','reason','title','window_title'];const field=fields.find(x=>r[x]);
- return {event_id:r.event_id,event_type:r.event_type,occurred_at:r.occurred_at,app:r.app||'',window_title:clip(r.window_title,160),preview:clip(field?r[field]:'',160),preview_field:field==='window_title'?'app.window_title':field?'payload.'+field:null,window_title_is_body:false,details_omitted:true,attachment_count:r.attachment_count||0,event_hash:r.hash,...rawBasis(r.event_type,r.source_kind,r.reason_source),business_outcome_verified:false,read:reference(scope,'raw',r.event_id)};
+ return {event_id:r.event_id,event_type:r.event_type,occurred_at:r.occurred_at,app:r.app||'',window_title:clip(r.window_title,160),preview:clip(field?r[field]:'',160),preview_field:field==='window_title'?'app.window_title':field?'payload.'+field:null,window_title_is_body:false,details_omitted:true,...(r.event_type==='chat.message'?{wechat:{account_id:r.wechat_account_id,conversation_id:r.conversation_id,sender_id:r.sender_id,direction:r.direction,identity_status:r.identity_status}}:{}),attachment_count:r.attachment_count||0,event_hash:r.hash,...rawBasis(r.event_type,r.source_kind,r.reason_source),business_outcome_verified:false,read:reference(scope,'raw',r.event_id)};
 }
 function personalPreview(r,scope,reader){
  const evidence=reader.links([r.ref_0,r.ref_1].filter(Boolean));evidence.not_returned=Math.max(0,(r.evidence_count||0)-evidence.items.length);

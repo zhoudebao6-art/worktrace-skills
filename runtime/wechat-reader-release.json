@@ -1,0 +1,44 @@
+{
+  "format": "worktrace.wechat-native-release/1.0",
+  "version": "0.6.0",
+  "platform": "windows-x64",
+  "url": "https://github.com/zhoudebao6-art/worktrace-skills/releases/download/v0.6.0/worktrace-wechat-reader-v0.6.0-windows-x64.zip",
+  "sha256": "9e3fcb741dc21ac47296dd72290538c18766054f022fd7496ec3a1724cd5dc33",
+  "files": [
+    {
+      "path": "build-manifest.json",
+      "size": 3404,
+      "sha256": "7b45984e7f966cbbc9ea255829ee8aa5ef59387df5c8ebcb11d713dc65bf9711"
+    },
+    {
+      "path": "LICENSE-SQLCipher.txt",
+      "size": 1463,
+      "sha256": "3eee3c7964a9becc94d747bd36703d31fc86eb994680b06a61bfd4f2661eaac8"
+    },
+    {
+      "path": "LICENSE-Tencent-WCDB.txt",
+      "size": 22752,
+      "sha256": "a4f22734425182c5937bdcf0dd317ba5039088599464a1f9bd9ba284621f2719"
+    },
+    {
+      "path": "THIRD-PARTY-NOTICES.md",
+      "size": 1892,
+      "sha256": "6e19701120f568648ac01c03ec2052df9e05504bfb1b4486e2bffe1d3fbffd8b"
+    },
+    {
+      "path": "worktrace-wcdb.dll",
+      "size": 1416192,
+      "sha256": "e532de6e1ccbb41181562f0a1bf1efa3045fe85d625141614b738bc93bf7359a"
+    },
+    {
+      "path": "worktrace-wechat-reader.exe",
+      "size": 22016,
+      "sha256": "bbdb97c2bb1c919e5ec0af3a17fa7ab78e8c1baaabfc27953b345f30b944529e"
+    },
+    {
+      "path": "worktrace-wechat-setup.exe",
+      "size": 20992,
+      "sha256": "9dc04595e514d446a4a4bcec309b8a1b40ff44813136c98512e5ddea8fd1db5a"
+    }
+  ]
+}

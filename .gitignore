@@ -53,3 +53,9 @@ join-state.json
 *.request.json.*.tmp
 enrollment.json.*.tmp
 request.json.*.tmp
+
+# Local WeChat source profiles and protected runtime keys are never source.
+**/private/
+**/wechat-source.json*
+**/wechat-profile.json*
+**/runtime/wechat-reader-*/

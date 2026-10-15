@@ -1,3 +1,4 @@
+import {wechatPreview} from './wechat-schema.mjs';
 import {deriveCandidates} from './candidates.mjs';
 import {assert,uuid,canonical,hash,id} from './protocol.mjs';
 export function initAnalysis(store){store.db.exec(`
@@ -7,7 +8,7 @@ export function initAnalysis(store){store.db.exec(`
  CREATE TABLE IF NOT EXISTS worker_hub_attempts(batch_id TEXT NOT NULL,day TEXT NOT NULL,state TEXT NOT NULL,started_at TEXT NOT NULL,finished_at TEXT,reason TEXT,next_retry_day TEXT NOT NULL,PRIMARY KEY(batch_id,day),FOREIGN KEY(batch_id) REFERENCES analysis_batches(batch_id));
  CREATE INDEX IF NOT EXISTS worker_hub_attempts_day ON worker_hub_attempts(day,state);
 `);}
-function batchView(store,b){if(!b)return null;const rows=store.db.prepare('SELECT e.json FROM events e JOIN analysis_members m ON m.event_id=e.event_id WHERE m.batch_id=? ORDER BY e.rowid').all(b.batch_id);return {...b,result:b.result_json?JSON.parse(b.result_json):null,result_json:undefined,events:rows.map(r=>{const e=JSON.parse(r.json);return {event_id:e.event_id,employee_id:e.employee_id,device_id:e.device_id,occurred_at:e.occurred_at,event_type:e.event_type,case_id:e.context.case_id,task_id:e.payload.task_id||null,application:e.app.process_name,preview:(e.payload.text||e.payload.content_text||e.payload.input_summary||e.payload.reason||e.payload.result?.summary||'').slice(0,200),attachments:e.attachments};})};}
+function batchView(store,b){if(!b)return null;const rows=store.db.prepare('SELECT e.json FROM events e JOIN analysis_members m ON m.event_id=e.event_id WHERE m.batch_id=? ORDER BY e.rowid').all(b.batch_id);return {...b,result:b.result_json?JSON.parse(b.result_json):null,result_json:undefined,events:rows.map(r=>{const e=JSON.parse(r.json);return {event_id:e.event_id,employee_id:e.employee_id,device_id:e.device_id,occurred_at:e.occurred_at,event_type:e.event_type,case_id:e.context.case_id,task_id:e.payload.task_id||null,application:e.app.process_name,preview:(e.payload.text||e.payload.content_text||e.payload.input_summary||e.payload.reason||e.payload.result?.summary||'').slice(0,200),attachments:e.attachments,...wechatPreview(e)};})};}
 export function nextAnalysis(store,{employee='',limit=50,source='all'}={},{automaticDay=null}={}){
  initAnalysis(store);assert(['all','personal'].includes(source),'分析来源无效');assert(typeof employee==='string'&&employee.length<=80,'员工编号无效');assert(Number.isInteger(limit)&&limit>=1&&limit<=100,'批次最多 100 条');
  // Only the in-process worker supplies this third argument. Manual review

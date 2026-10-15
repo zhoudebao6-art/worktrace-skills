@@ -10,6 +10,8 @@ import {validatePolicy} from './collector.mjs';
 import {checkLearningRelations} from './learning.mjs';
 import {coverageSchema,validateShape} from './learning-schema.mjs';
 import {acquireIdentityLock} from './runtime-lifecycle.mjs';
+import {wechatSourceKey} from './wechat-schema.mjs';
+import {validateWechatIncrementalState} from './wechat-incremental.mjs';
 
 const MAGIC=Buffer.from('WTRHOF01'),HEADER_SIZE=36,TAG_SIZE=16,MAX_MANIFEST=2*1024*1024,MAX_DATABASE=64*1024**3;
 const deriveKey=promisify(scrypt);
@@ -63,6 +65,10 @@ async function validateEvidence(db){
    if(p.previous_event_id){const prior=previous(p.previous_event_id,'来源文件前一版本缺失或顺序无效');assert(prior.event_type==='document.version'&&prior.org_id===e.org_id&&prior.device_id===e.device_id&&prior.employee_id===e.employee_id&&prior.payload.path===p.path,'来源文件前一版本归属不一致');}
   }
   if(e.event_type==='learning.summary'){for(const eid of e.payload.evidence_event_ids)previous(eid,'来源总结证据缺失或顺序无效');checkLearningRelations({db},e);}
+  if(e.event_type==='chat.message'){
+   const p=e.payload;
+   if(p.previous_revision_id){const prior=previous(p.previous_revision_id,'来源微信修订缺失或顺序无效');assert(prior.event_type==='chat.message'&&prior.org_id===e.org_id&&prior.device_id===e.device_id&&prior.employee_id===e.employee_id&&prior.payload.message_key===p.message_key&&prior.payload.revision===p.revision-1,'来源微信修订归属不一致');}
+  }
   if(e.event_type.startsWith('task.')||e.event_type.startsWith('artifact.')){
    const p=e.payload,originRow=db.prepare("SELECT rowid,json FROM events WHERE event_type='task.created' AND json_extract(json,'$.payload.task_id')=? ORDER BY rowid LIMIT 1").get(p.task_id);
    assert(originRow,'来源任务缺少起点');const origin=JSON.parse(originRow.json);
@@ -132,6 +138,37 @@ async function validateCheckpoints(db,identity){
  if(hasTable(db,'worker_local_attempts'))for(const a of db.prepare('SELECT job_id,batch_id FROM worker_local_attempts').iterate())assert(getBatch?.get(a.batch_id)&&getJob?.get(a.job_id),'本地学习尝试引用的任务或检查点不存在');
  if(hasTable(db,'worker_hub_attempts'))for(const a of db.prepare('SELECT batch_id FROM worker_hub_attempts').iterate())assert(analyses&&db.prepare('SELECT 1 FROM analysis_batches WHERE batch_id=?').get(a.batch_id),'总控学习尝试引用的检查点不存在');
 }
+// The latest-message index and the incremental checkpoint survive a full Recover.
+// Validate them against immutable evidence, rather than silently rebuilding or
+// trusting a valid SQLite foreign key that may still point at an older revision.
+// Stream one message chain at a time; imported evidence need not have a local
+// source cursor, and a scope-filtered source may legitimately have no messages.
+async function validateWechatCheckpoints(db){
+ const indexed=hasTable(db,'wechat_messages'),hasChat=!!db.prepare("SELECT 1 FROM events WHERE event_type='chat.message' LIMIT 1").get();
+ assert(!hasChat||indexed,'来源微信消息缺少最新索引');
+ let previous=null,groups=0,visited=0;
+ const getIndex=indexed?db.prepare('SELECT * FROM wechat_messages WHERE device_id=? AND message_key=?'):null;
+ const checkLatest=()=>{
+  if(!previous)return;
+  const e=previous,p=e.payload,m=p.message,row=getIndex.get(e.device_id,p.message_key);
+  const expected={device_id:e.device_id,message_key:p.message_key,source_key:wechatSourceKey(p.source),account_id:p.source.account_id,conversation_id:m.conversation_id,sender_id:m.sender_id,direction:m.direction,revision:p.revision,revision_id:p.revision_id,content_hash:hash(canonical(m)),observed_at:p.observed_at,sent_at:m.sent_at};
+  assert(row&&Object.entries(expected).every(([key,value])=>row[key]===value),'来源微信最新索引与事件不一致');groups++;
+ };
+ for(const row of db.prepare("SELECT json FROM events WHERE event_type='chat.message' ORDER BY device_id,json_extract(json,'$.payload.message_key'),rowid").iterate()){
+  const e=JSON.parse(row.json),p=e.payload,same=previous&&previous.device_id===e.device_id&&previous.payload.message_key===p.message_key;
+  if(!same){checkLatest();assert(p.revision===1&&p.previous_revision_id===null,'来源微信修订起点缺失');}
+  else assert(p.revision===previous.payload.revision+1&&p.previous_revision_id===previous.event_id,'来源微信修订缺失或分叉');
+  previous=e;if(++visited%64===0)await yieldTurn();
+ }
+ checkLatest();
+ if(indexed)assert(db.prepare('SELECT COUNT(*) n FROM wechat_messages').get().n===groups,'来源微信最新索引含无来源记录');
+ if(hasTable(db,'wechat_sources'))for(const row of db.prepare('SELECT source_key,state_json FROM wechat_sources').iterate()){
+  assert(typeof row.state_json==='string'&&Buffer.byteLength(row.state_json,'utf8')<=16384,'来源微信游标状态超出预算');
+  const state=JSON.parse(row.state_json);validateWechatIncrementalState(state,state?.source);
+  assert(row.source_key===state.source_key,'来源微信游标索引与状态不一致');
+  if(++visited%64===0)await yieldTurn();
+ }
+}
 async function databaseDetails(db,identity){
  db.exec('PRAGMA trusted_schema=OFF');
  assert(db.prepare('PRAGMA quick_check').all().every(r=>Object.values(r)[0]==='ok'),'快照 SQLite 完整性检查失败');assert(!db.prepare('PRAGMA foreign_key_check').all().length,'快照 SQLite 引用完整性检查失败');
@@ -144,6 +181,7 @@ async function databaseDetails(db,identity){
  assert((!own.installation_id||own.installation_id===identity.installation_id)&&own.employee_name===identity.employee_name&&own.label===identity.label,'快照设备登记与移交身份不一致');
  await validateEvidence(db);
  await validateCheckpoints(db,identity);
+ await validateWechatCheckpoints(db);
  const range=db.prepare('SELECT MIN(occurred_at) from_time,MAX(occurred_at) to_time FROM events').get();
  return {tables,devices,counts:{events:tables.events,assets:tables.assets,file_versions:tables.file_versions||0,personal_summaries:db.prepare("SELECT COUNT(*) n FROM events WHERE event_type='learning.summary'").get().n},time_range:{from:range.from_time,to:range.to_time},local_state:{capture_enabled:getMeta(db,'capture_enabled'),worker_policy:getMeta(db,'worker_policy'),worker_active_call:getMeta(db,'worker_active_call'),sync_cursor:getMeta(db,'sync_cursor'),all_sqlite_tables_preserved:true,restore_mode:'review_only',external_runtime_logs_included:false}};
 }

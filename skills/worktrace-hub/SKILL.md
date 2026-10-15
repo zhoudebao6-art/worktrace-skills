@@ -11,6 +11,8 @@ description: 由总控 Codex 从随技能源码搭建 WorkTrace 环境，准备�
 
 接收验收分开检查原始事件/附件/文件原件、个人总结、未完成状态和来源。只有 raw 没有 learning.summary 时，默认 source=personal 无批次是正常缺口；暂停自动分析后按 offline-handoff.md 用 source=all、明确员工、有界手动审阅保存总控分析，不伪造员工总结，也不宣称自动生成了个人候选。总控只能查询已收到的内容；没有连接的离线节点不能收取补证或远程命令。
 
+接收 v0.6.0 微信 `chat.message` 前，真实总控引擎也须支持协议 1.3；只更新技能不足以接收新协议。按 source.account_id、conversation_id、sender_id 区分账号、客户与群成员，unknown 不猜人，修订不算新的回复。数据库中存在发出记录不证明员工手打、送达、已读或办结；媒体状态不代表原件已取得。只读 `wechat_list_chats` / `wechat_read_chat` 在总控须指定 device_id，查询已同步证据，不连接员工微信进程。移交不含原员工 DPAPI 密钥；不要为阅读已保存证据索取密钥或复制原微信数据库。
+
 不制作安装包，不让员工自己编写采集程序。技能内 `assets/engine` 是经过校验的服务源码；bootstrap 首次准备经官方 SHA256 校验的固定 Node 运行时；总控按脚本准备环境，不临时重造采集器。先读 [references/deployment.md](references/deployment.md)。
 
 任何维护、状态、测试或续用先读取本技能的 deployment.json，核对本机 role/root；已有总控优先用 `scripts/control.ps1 -Action status` 只读检查，需要运行且已排除重复实例时才 start。仅首次且没有本机部署状态时用 `scripts/bootstrap.ps1 -WorkDir <公司指定独立数据目录>`；绑定缺损或冲突先恢复原配置或明确原目录，不重新初始化。不要打印 data/config.json、running.json 或登记文件，它们包含密钥。
